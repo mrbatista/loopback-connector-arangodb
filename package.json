@@ -1,0 +1,37 @@
+{
+  "name": "loopback-connector-arango",
+  "version": "0.1.0",
+  "description": "ArangoDb adapter for loopback",
+  "main": "index.js",
+  "scripts": {
+    "build": "coffee --bare --compile --output lib/ src/*.coffee",
+    "prepublish": "coffee --bare --compile --output lib/ src/*.coffee",
+    "test": "node_modules/.bin/mocha test/*.test.js -R spec -t 10000"
+  },
+  "dependencies": {
+    "aqb": "^1.8.3",
+    "arangojs": "^3.3.1",
+    "async": "^0.9.0",
+    "debug": "^1.0.4",
+    "extend": "^2.0.0",
+    "loopback-connector": "^1.1.1",
+    "underscore": "^1.8.2"
+  },
+  "devDependencies": {
+    "bluebird": "^2.9.14",
+    "codo": "^2.0.11",
+    "coffee-script": "^1.9.1",
+    "loopback-datasource-juggler": "^2.20.0",
+    "mocha": "^2.2.1",
+    "rc": "^0.6.0",
+    "semicov": "~0.1.1-1",
+    "semver": "^4.3.1",
+    "should": "^5.2.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nvdnkpr/loopback-connector-arango.git"
+  },
+  "author": "Navid Nikpour <navid@nikpour.com>",
+  "license": "MIT"
+}
