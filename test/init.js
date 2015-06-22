@@ -2,7 +2,7 @@ module.exports = require('should');
 
 DataSource = require('loopback-datasource-juggler').DataSource;
 
-config = require('rc')('loopback', {test: {mongodb: {}}}).test.arangodb;
+config = require('rc')('loopback', {test: {arangodb: {}}}).test.arangodb;
 
 if (process.env.CI) {
   config = {

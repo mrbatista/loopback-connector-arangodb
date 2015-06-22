@@ -4,7 +4,7 @@
 util = require 'util'
 url = require 'url'
 
-ArangoConnection = require 'arangojs'
+arangojs = require 'arangojs'
 qb = require 'aqb'
 async = require 'async'
 Connector = require('loopback-connector').Connector
@@ -24,7 +24,7 @@ _ = require 'underscore'
   
   @returns [Object] The connection object
 ###
-generateArangoConnectionObject = (options) ->
+generateConnectionObject = (options) ->
   retOptions =
     host: options.host or options.hostname or '127.0.0.1'
     port: options.port or '8529'
@@ -42,7 +42,7 @@ generateArangoConnectionObject = (options) ->
 
 
 ###
-  Initialize the MongoDB connector for the given data source
+  Initialize the ArangoDB connector for the given data source
   
   @param dataSource [DataSource] The data source instance
   @param callback [Function] The callback function
@@ -53,7 +53,9 @@ exports.initialize = (dataSource, callback) ->
   # TODO: convert settings into the clients options object
   s = dataSource.settings
   
+  dataSource.driver = arangojs
   dataSource.connector = new ArangoDB s, dataSource
+  
   
   ###
     Connector instance can have an optional property named as DataAccessObject that provides
@@ -114,7 +116,7 @@ class ArangoDB extends Connector
     if @db?
       process.nextTick () -> callback && callback null, @db
     else
-      @db = new ArangoConnection @settings
+      @db = new ArangoJS @settings
       # TODO: ping the server as a test, callback with error or db
       callback and callback null, @db
   

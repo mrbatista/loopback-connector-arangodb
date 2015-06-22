@@ -55,30 +55,6 @@ describe('arangodb connector', function () {
       }
     });
 
-    PostWithStringId = db.define('PostWithStringId', {
-      id: {type: String, id: true},
-      title: { type: String, length: 255, index: true },
-      content: { type: String }
-    });
-
-    PostWithObjectId = db.define('PostWithObjectId', {
-      _id: {type: db.ObjectID, id: true},
-      title: { type: String, length: 255, index: true },
-      content: { type: String }
-    });
-
-    PostWithNumberUnderscoreId = db.define('PostWithNumberUnderscoreId', {
-      _id: {type: Number, id: true},
-      title: { type: String, length: 255, index: true },
-      content: { type: String }
-    });
-
-    PostWithNumberId = db.define('PostWithNumberId', {
-      id: {type: Number, id: true},
-      title: { type: String, length: 255, index: true },
-      content: { type: String }
-    });
-
     User.hasMany(Post);
     Post.belongsTo(User);
   });
@@ -86,15 +62,6 @@ describe('arangodb connector', function () {
   beforeEach(function (done) {
     User.destroyAll(function () {
       Post.destroyAll(function () {
-        PostWithObjectId.destroyAll(function () {
-          PostWithNumberId.destroyAll(function () {
-            PostWithNumberUnderscoreId.destroyAll(function () {
-              PostWithStringId.destroyAll(function () {
-                done();
-              });
-            });
-          });
-        });
       });
     });
   });
@@ -133,129 +100,7 @@ describe('arangodb connector', function () {
     });
   });
 
-  it('should have created models with correct _id types', function (done) {
-    PostWithObjectId.definition.properties._id.type.should.be.equal(db.ObjectID);
-    should.not.exist(PostWithObjectId.definition.properties.id);
-    PostWithNumberUnderscoreId.definition.properties._id.type.should.be.equal(Number);
-    should.not.exist(PostWithNumberUnderscoreId.definition.properties.id);
 
-    done();
-  });
-
-  it('should handle correctly type Number for id field _id', function (done) {
-    PostWithNumberUnderscoreId.create({_id: 3, content: "test"}, function (err, person) {
-      should.not.exist(err);
-      person._id.should.be.equal(3);
-
-      PostWithNumberUnderscoreId.findById(person._id, function (err, p) {
-        should.not.exist(err);
-        p.content.should.be.equal("test");
-
-        done();
-      });
-    });
-  });
-
-  it('should handle correctly type Number for id field _id using string', function (done) {
-    PostWithNumberUnderscoreId.create({_id: 4, content: "test"}, function (err, person) {
-      should.not.exist(err);
-      person._id.should.be.equal(4);
-
-      PostWithNumberUnderscoreId.findById('4', function (err, p) {
-        should.not.exist(err);
-        p.content.should.be.equal("test");
-
-        done();
-      });
-    });
-  });
-
-  it('should allow to find post by id string if `_id` is defined id', function (done) {
-    PostWithObjectId.create(function (err, post) {
-      PostWithObjectId.find({where: {_id: post._id.toString()}}, function (err, p) {
-        should.not.exist(err);
-        post = p[0];
-        should.exist(post);
-        post._id.should.be.an.instanceOf(db.ObjectID);
-
-        done();
-      });
-    });
-  });
-
-  it('find with `_id` as defined id should return an object with _id instanceof ObjectID', function (done) {
-    PostWithObjectId.create(function (err, post) {
-      PostWithObjectId.findById(post._id, function (err, post) {
-        should.not.exist(err);
-        post._id.should.be.an.instanceOf(db.ObjectID);
-
-        done();
-      });
-
-    });
-  });
-
-  it('should update the instance with `_id` as defined id', function (done) {
-    PostWithObjectId.create({title: 'a', content: 'AAA'}, function (err, post) {
-      post.title = 'b';
-      PostWithObjectId.updateOrCreate(post, function (err, p) {
-        should.not.exist(err);
-        p._id.should.be.equal(post._id);
-
-        PostWithObjectId.findById(post._id, function (err, p) {
-          should.not.exist(err);
-          p._id.should.be.eql(post._id);
-          p.content.should.be.equal(post.content);
-          p.title.should.be.equal('b');
-        });
-
-        PostWithObjectId.find({where: {title: 'b'}}, function (err, posts) {
-          should.not.exist(err);
-          p = posts[0];
-          p._id.should.be.eql(post._id);
-          p.content.should.be.equal(post.content);
-          p.title.should.be.equal('b');
-          posts.should.have.lengthOf(1);
-          done();
-        });
-      });
-
-    });
-  });
-
-  it('all should return object (with `_id` as defined id) with an _id instanceof ObjectID', function (done) {
-    var post = new PostWithObjectId({title: 'a', content: 'AAA'})
-    post.save(function (err, post) {
-      PostWithObjectId.all({where: {title: 'a'}}, function (err, posts) {
-        should.not.exist(err);
-        posts.should.have.lengthOf(1);
-        post = posts[0];
-        post.should.have.property('title', 'a');
-        post.should.have.property('content', 'AAA');
-        post._id.should.be.an.instanceOf(db.ObjectID);
-
-        done();
-      });
-
-    });
-  });
-
-  it('all return should honor filter.fields, with `_id` as defined id', function (done) {
-    var post = new PostWithObjectId({title: 'a', content: 'AAA'})
-    post.save(function (err, post) {
-      PostWithObjectId.all({fields: ['title'], where: {title: 'a'}}, function (err, posts) {
-        should.not.exist(err);
-        posts.should.have.lengthOf(1);
-        post = posts[0];
-        post.should.have.property('title', 'a');
-        post.should.have.property('content', undefined);
-        should.not.exist(post._id);
-
-        done();
-      });
-
-    });
-  });
 
   it('should support Buffer type', function (done) {
     User.create({name: 'John', icon: new Buffer('1a2')}, function (e, u) {
@@ -335,44 +180,6 @@ describe('arangodb connector', function () {
           // Not strict equal
           p[0].id.should.be.eql(p1.id);
           done();
-        });
-      });
-    });
-  });
-
-  it('should allow to find by number id using where', function (done) {
-    PostWithNumberId.create({id: 1, title: 'Post1', content: 'Post1 content'}, function (err, p1) {
-      PostWithNumberId.create({id: 2, title: 'Post2', content: 'Post2 content'}, function (err, p2) {
-        PostWithNumberId.find({where: {id: p1.id}}, function (err, p) {
-          should.not.exist(err);
-          should.exist(p && p[0]);
-          p.length.should.be.equal(1);
-          p[0].id.should.be.eql(p1.id);
-          done();
-        });
-      });
-    });
-  });
-
-  it('should allow to find by number id using where inq', function (done) {
-    PostWithNumberId.create({id: 1, title: 'Post1', content: 'Post1 content'}, function (err, p1) {
-      PostWithNumberId.create({id: 2, title: 'Post2', content: 'Post2 content'}, function (err, p2) {
-        PostWithNumberId.find({where: {id: {inq: [1]}}}, function (err, p) {
-          should.not.exist(err);
-          should.exist(p && p[0]);
-          p.length.should.be.equal(1);
-          p[0].id.should.be.eql(p1.id);
-          PostWithNumberId.find({where: {id: {inq: [1, 2]}}}, function (err, p) {
-            should.not.exist(err);
-            p.length.should.be.equal(2);
-            p[0].id.should.be.eql(p1.id);
-            p[1].id.should.be.eql(p2.id);
-            PostWithNumberId.find({where: {id: {inq: [0]}}}, function (err, p) {
-              should.not.exist(err);
-              p.length.should.be.equal(0);
-              done();
-            });
-          });
         });
       });
     });
@@ -480,161 +287,6 @@ describe('arangodb connector', function () {
         });
       });
 
-    });
-
-    var describeMongo26 = describe;
-    if (process.env.MONGODB_VERSION &&
-      require('semver').satisfies('2.6.0', '>' +
-        process.env.MONGODB_VERSION)) {
-      describeMongo26 = describe.skip;
-    }
-
-    describeMongo26('extended operators', function() {
-
-      it('should use $set by default if no operator is supplied', function(done) {
-        User.create({name: 'Al', age: 31, email: 'al@strongloop'}, function(err1, createdusers1) {
-          should.not.exist(err1);
-          User.create({name: 'Simon', age: 32, email: 'simon@strongloop'}, function(err2, createdusers2) {
-            should.not.exist(err2);
-            User.create({name: 'Ray', age: 31, email: 'ray@strongloop'}, function(err3, createdusers3) {
-              should.not.exist(err3);
-
-              User.updateAll({name: 'Simon'}, {name: 'Alex'}, function(err, updatedusers) {
-                should.not.exist(err);
-                updatedusers.should.be.equal(1);
-
-                User.find({where: {name: 'Alex'}}, function(err, founduser) {
-                  should.not.exist(err);
-                  founduser.length.should.be.equal(1);
-                  founduser[0].name.should.be.equal('Alex');
-
-                  done();
-                });
-              });
-
-            });
-          });
-        });
-      });
-
-      it('should be possible to use the $inc operator', function(done) {
-        User.dataSource.settings.allowExtendedOperators = true;
-        User.create({name: 'Al', age: 31, email: 'al@strongloop'}, function(err1, createdusers1) {
-          should.not.exist(err1);
-          User.create({name: 'Simon', age: 32, email: 'simon@strongloop'}, function(err2, createdusers2) {
-            should.not.exist(err2);
-            User.create({name: 'Ray', age: 31, email: 'ray@strongloop'}, function(err3, createdusers3) {
-              should.not.exist(err3);
-
-              User.updateAll({name: 'Ray'}, {'$inc': {age: 2}}, function(err, updatedusers) {
-                should.not.exist(err);
-                updatedusers.should.be.equal(1);
-
-                User.find({where: {name: 'Ray'}}, function(err, foundusers) {
-                  should.not.exist(err);
-                  foundusers.length.should.be.equal(1);
-                  foundusers[0].age.should.be.equal(33);
-
-                  done();
-                });
-              })
-
-            });
-          });
-        });
-      });
-
-      it('should be possible to use the $min and $max operators', function(done) {
-        User.dataSource.settings.allowExtendedOperators = true;
-        User.create({name: 'Simon', age: 32, email: 'simon@strongloop'}, function(err2, createdusers2) {
-          should.not.exist(err2);
-
-          User.updateAll({name: 'Simon'}, {'$max': {age: 33}}, function(err, updatedusers) {
-            should.not.exist(err);
-            updatedusers.should.be.equal(1);
-
-            User.updateAll({name: 'Simon'}, {'$min': {age: 31}}, function(err, updatedusers) {
-              should.not.exist(err);
-              updatedusers.should.be.equal(1);
-
-              User.find({where: {name: 'Simon'}}, function(err, foundusers) {
-                should.not.exist(err);
-                foundusers.length.should.be.equal(1);
-                foundusers[0].age.should.be.equal(31);
-
-                done();
-              });
-
-            });
-          });
-
-        });
-      });
-
-      it('should be possible to use the $mul operator', function(done) {
-        User.dataSource.settings.allowExtendedOperators = true;
-        User.create({name: 'Al', age: 31, email: 'al@strongloop'}, function(err1, createdusers1) {
-          should.not.exist(err1);
-
-          User.updateAll({name: 'Al'}, {'$mul': {age: 2}}, function(err, updatedusers) {
-            should.not.exist(err);
-            updatedusers.should.be.equal(1);
-
-            User.find({where: {name: 'Al'}}, function(err, foundusers) {
-              should.not.exist(err);
-              foundusers.length.should.be.equal(1);
-              foundusers[0].age.should.be.equal(62);
-
-              done();
-            });
-
-          });
-
-        });
-      });
-
-      it('should be possible to use the $rename operator', function(done) {
-        User.dataSource.settings.allowExtendedOperators = true;
-        User.create({name: 'Al', age: 31, email: 'al@strongloop'}, function(err1, createdusers1) {
-          should.not.exist(err1);
-
-          User.updateAll({name: 'Al'}, {'$rename': {name: 'firstname'}}, function(err, updatedusers) {
-            should.not.exist(err);
-            updatedusers.should.be.equal(1);
-
-            User.find({where: {firstname: 'Al'}}, function(err, foundusers) {
-              should.not.exist(err);
-              foundusers.length.should.be.equal(1);
-
-              done();
-            });
-
-          });
-        });
-
-      });
-
-      it('should be possible to use the $unset operator', function(done) {
-        User.dataSource.settings.allowExtendedOperators = true;
-        User.create({name: 'Al', age: 31, email: 'al@strongloop'}, function(err1, createdusers1) {
-          should.not.exist(err1);
-
-          User.updateAll({name: 'Al'}, {'$unset': {email: ''}}, function(err, updatedusers) {
-            should.not.exist(err);
-            updatedusers.should.be.equal(1);
-
-            User.find({where: {name: 'Al'}}, function(err, foundusers) {
-              should.not.exist(err);
-              foundusers.length.should.be.equal(1);
-              should.not.exist(foundusers[0].email);
-
-              done();
-            });
-
-          });
-        });
-
-      });
     });
 
   });
@@ -1116,46 +768,6 @@ describe('arangodb connector', function () {
     });
   });
 
-  it('create should convert id from string to ObjectID if format matches',
-    function (done) {
-      var oid = new db.ObjectID().toString();
-      PostWithStringId.create({id: oid, title: 'c', content: 'CCC'}, function (err, post) {
-        PostWithStringId.findById(oid, function (err, post) {
-          should.not.exist(err);
-          should.not.exist(post._id);
-          post.id.should.be.equal(oid);
-
-          done();
-        });
-      });
-    });
-
-  it('find should order by id if the order is not set for the query filter',
-    function (done) {
-      PostWithStringId.create({id: '2', title: 'c', content: 'CCC'}, function (err, post) {
-        PostWithStringId.create({id: '1', title: 'd', content: 'DDD'}, function (err, post) {
-          PostWithStringId.find(function (err, posts) {
-            should.not.exist(err);
-            posts.length.should.be.equal(2);
-            posts[0].id.should.be.equal('1');
-
-            PostWithStringId.find({limit: 1, offset: 0}, function (err, posts) {
-              should.not.exist(err);
-              posts.length.should.be.equal(1);
-              posts[0].id.should.be.equal('1');
-
-              PostWithStringId.find({limit: 1, offset: 1}, function (err, posts) {
-                should.not.exist(err);
-                posts.length.should.be.equal(1);
-                posts[0].id.should.be.equal('2');
-                done();
-              });
-            });
-          });
-        });
-      });
-    });
-
   it('should report error on duplicate keys', function (done) {
     Post.create({title: 'd', content: 'DDD'}, function (err, post) {
       Post.create({id: post.id, title: 'd', content: 'DDD'}, function (err, post) {
@@ -1351,13 +963,7 @@ describe('arangodb connector', function () {
 
   after(function (done) {
     User.destroyAll(function () {
-      Post.destroyAll(function () {
-        PostWithObjectId.destroyAll(function () {
-          PostWithNumberId.destroyAll(function () {
-            PostWithNumberUnderscoreId.destroyAll(done);
-          });
-        });
-      });
+      Post.destroyAll(function () {});
     });
   });
 });
