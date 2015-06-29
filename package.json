@@ -6,7 +6,7 @@
   "scripts": {
     "build": "coffee --bare --compile --output lib/ src/*.coffee",
     "prepublish": "coffee --bare --compile --output lib/ src/*.coffee",
-    "test": "node_modules/.bin/mocha test/*.test.js -R spec -t 10000"
+    "test": "node_modules/.bin/mocha test/*.test.coffee -R spec -t 10000 --compilers coffee:coffee-script/register"
   },
   "dependencies": {
     "aqb": "^1.8.3",
