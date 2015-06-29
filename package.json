@@ -1,7 +1,7 @@
 {
-  "name": "loopback-connector-arango",
+  "name": "loopback-connector-arangodb",
   "version": "0.1.0",
-  "description": "ArangoDb adapter for loopback",
+  "description": "Loopback ArangoDB Connector",
   "main": "index.js",
   "scripts": {
     "build": "coffee --bare --compile --output lib/ src/*.coffee",
