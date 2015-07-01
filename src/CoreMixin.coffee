@@ -7,12 +7,10 @@ module.exports = {
         @param callback [Function] The callback function, called the with created connection
       ###
       connect: (callback) =>
-        if @db?
-          process.nextTick () -> callback && callback null, @db
-        else
-          @db = require('arangojs') @arangoConfig          
-          # TODO: ping the server as a test, callback with error or db
-          callback and callback null, @db
+        console.log 'connect called'
+        process.nextTick () ->
+          callback && callback null, @db
+      
       ###
         Get the types of this connector
     
@@ -21,6 +19,7 @@ module.exports = {
       getTypes: () => 
         return ['db', 'nosql', 'arangodb']
   
+      
       ###
         The default Id type
     
@@ -30,6 +29,7 @@ module.exports = {
       getDefaultIdType: () =>
         return String
   
+      
       
       ###
         Get the model class for a certain model name
@@ -41,6 +41,7 @@ module.exports = {
       getModelClass: (model) =>
         return @_models[model]
   
+      
       ###
         Get the collection name for a certain model name
     
@@ -55,7 +56,6 @@ module.exports = {
         return model
       
       
-  
       ###
         Converts the retrieved data from the database to JSON, based on the properties of a given model
     
@@ -169,5 +169,21 @@ module.exports = {
             callback err if err
             callback null, result
       
+      ###
+        Checks the version of the ArangoDB
+        
+        @param callback [Function] The calback function, called with a (possible) error object and the server versio
+      ###
+      version: (callback) =>
+        debug 'version' if @debug
+        
+        if @version?
+          callback null, @version
+        else
+          @api 'version', (err, result) ->
+            callback err if err
+            @version = result
+            callback null, @version
+        
     }
 }
