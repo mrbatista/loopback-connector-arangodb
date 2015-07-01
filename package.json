@@ -3,6 +3,13 @@
   "version": "0.1.0",
   "description": "Loopback ArangoDB Connector",
   "main": "index.js",
+  "keywords": [
+    "StrongLoop",
+    "LoopBack",
+    "ArangoDB",
+    "DataSource",
+    "Connector"
+  ],
   "scripts": {
     "build": "coffee --bare --compile --output lib/ src/*.coffee",
     "prepublish": "coffee --bare --compile --output lib/ src/*.coffee",
