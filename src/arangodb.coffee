@@ -4,6 +4,7 @@
 url = require 'url'
 
 # ArangoDB Query Builder
+ajs = require 'arangojs'
 qb = require 'aqb'
 
 debug = require('debug') 'loopback:connector:arango'
@@ -13,6 +14,45 @@ _ = require 'underscore'
 Connector = require('loopback-connector').Connector;
 
 
+exports.generateArangoDBObject = generateArangoDBObject = (settings) ->
+  if settings.url
+    parsed = url.parse settings.url
+    
+    generated = {}
+    generated.protocol = 'http:'
+    generated.hostname = (parsed.hostname or '127.0.0.1')
+    generated.port     = (parsed.port or 8529)
+    
+    generated.auth = parsed.auth if parsed.auth?
+    
+    database = parsed.path[1..].split('/')[0] or 'loopback_db'
+    
+    dbUrl = url.format generated
+  else
+    obj = {}
+    obj.protocol = 'http:'
+    obj.hostname = (settings.host or '127.0.0.1')
+    obj.port = (settings.port or 8529)
+    
+    obj.auth = "#{settings.username}:#{settings.password}" if settings.username and settings.password
+
+    database = (settings.database or settings.db or 'loopback_db')
+    
+    dbUrl = url.format obj
+  
+  promise = (settings.promise or false)
+  
+  # TODO: add more arango specifig objects for a connection
+  
+  config = {
+    url: dbUrl
+    databaseName: database
+    promise: promise
+  }
+  
+  return config
+
+
 ###
   Initialize the ArangoDB connector for the given data source
   
@@ -20,10 +60,13 @@ Connector = require('loopback-connector').Connector;
   @param callback [Function] The callback function
 ###
 exports.initialize = (dataSource, callback) ->
-  console.log 'initialize'
-  dataSource.connector = new ArangoDBConnector datasource
-  datasource.connector.connect callback if callback?
-  console.log 'dataSource'
+  return if not ajs?
+  dataSource.driver = ajs;
+  
+  settings = generateArangoDBObject dataSource.settings
+  
+  dataSource.connector = new ArangoDBConnector settings, dataSource
+  # dataSource.connector.connect callback if callback?
 
 
 ###
@@ -31,7 +74,7 @@ exports.initialize = (dataSource, callback) ->
   
   @author Navid Nikpour
 ###
-class ArangoDBConnector
+class ArangoDBConnector extends Connector
   @extend: (obj) ->
     for key, value of obj when key not in ['extended', 'included']
       @[key] = value
@@ -47,44 +90,9 @@ class ArangoDBConnector
     obj.included?.apply(@)
     this
   
-  @optimizeSettings: (settings) ->
-    # settings is a string, dsn coded e.g. http://localhost:8529/ConnectorTest
-    if typeof settings is 'string'
-      url_obj = url.parse settings
-    
-      
-      database = url_obj.pathname[1..].split('/')[0]
-      delete url_obj.path
-      delete url_obj.pathname
-      url_obj.protocol = 'http:'
-      url_obj.slashes = true
-    
-      url = url.format url_obj
-      databaseName = database
-    else
-      user = settings.user or settings.username or null
-      pass = settings.pass or settings.password or null
-      auth = if user and pass then "#{user}:#{pass}" else null
-    
-      host = settings.host or 'localhost'
-      port = settings.port or 8529
-      hostname = "#{host}:#{port}"
-    
-      url = if auth? then "http://#{auth}@#{hostname}" else "http://#{hostname}"
-      database = settings.database or settings.db or '_system'
-      
-    
-    return {
-      url: url
-      databaseName: database
-      promise: false
-    }
-  
-  
-  
-  
   ###
     The constructor for ArangoDB connector
+    @constructor
 
     @param dataSource [Object] Object to connect this connector to a data source
     @option settings host [String] The host/ip address to connect with
@@ -94,29 +102,27 @@ class ArangoDBConnector
   
     @param dataSource [DataSource] The data source instance
   ###
-  constructor: (dataSource) ->
-    console.log 'constructor'
-    Connector.call this, 'arangodb', dataSource.settings
+  constructor: (settings, dataSource) ->
+    console.log 'constructor called'
+    super 'arangodb', settings
+    
+    # link to datasource
     @dataSource = dataSource
-    @dataSource.connector = this
     
-    settings = dataSource.settings or {}
-    @settings = settings
+    # debug
+    @debug = dataSource.settings.debug or debug.enabled
     
-    @name = 'arangodb'
-    @_models = {}
-    
-    @arangoConfig = connectionConfig @settings
+    # Query builder
     @qb = require('aqb')
     
-    return this
-  
+    @db = require('arangojs') @settings
+    @api = @db.route '_api'
   
   # one file per functionality
-  @extend require('./core')
-  @extend require('./crud')
-  @extend require('./migration')
+  @extend require('./CoreMixin')
+  @extend require('./CrudMixin')
+  @extend require('./MigrationMixin')
 
-require('util').inherits ArangoDBConnector, Connector
+# require('util').inherits ArangoDBConnector, Connector
 
 exports.ArangoDBConnector = ArangoDBConnector
