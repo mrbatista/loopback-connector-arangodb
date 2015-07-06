@@ -2,7 +2,6 @@ module.exports = require('should');
 
 # define global method getDataSource/getSchema, callable with a custom config, falling back to a config that was defined in a .loopbackrc file
 global.getDataSource = global.getSchema = (customConfig) ->
-  console.log customConfig
   DataSource = require('loopback-datasource-juggler').DataSource;
   
   # get fallback config from .loopbackrc
