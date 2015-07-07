@@ -17,6 +17,9 @@
     "build-test": "npm run build && npm test",
     "build-test-debug": "npm run build && DEBUG=loopback:* npm test"
   },
+  "pre-commit":[
+    "build-test"
+  ],
   "dependencies": {
     "aqb": "^1.8.3",
     "arangojs": "^3.3.1",
@@ -32,6 +35,7 @@
     "coffee-script": "^1.9.1",
     "loopback-datasource-juggler": "^2.20.0",
     "mocha": "^2.2.1",
+    "pre-commit": "^1.0.10",
     "rc": "^0.6.0",
     "semicov": "~0.1.1-1",
     "semver": "^4.3.1",
