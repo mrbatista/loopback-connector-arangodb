@@ -311,7 +311,13 @@ class ArangoDBConnector extends Connector
       callback = bindVars
       bindVars = {}
     
-    @db.query query, bindVars, callback
+    @db.query query, bindVars, (err, cursor) ->
+      # workaround: when there is no error (e.g. wrong AQL syntax etc.) and no cursor, the authentication failed
+      if not err? and cursor.length = 0
+        authErr = new Error 'Authentication failed'
+        callback authErr, null
+      else 
+        callback err, cursor
   
   
   ###

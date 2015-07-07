@@ -25,6 +25,7 @@
     "aqb": "^1.8.3",
     "arangojs": "^3.3.1",
     "async": "^0.9.0",
+    "chance": "^0.7.6",
     "debug": "^1.0.4",
     "extend": "^2.0.0",
     "loopback-connector": "^1.1.1",

@@ -3,22 +3,24 @@ should = require('./init');
 
 DataSource = require('loopback-datasource-juggler').DataSource
 GeoPoint = require('loopback-datasource-juggler').GeoPoint
-arangodb = require '..'
-ArangoDBConnector = arangodb.ArangoDBConnector
 QB = require 'aqb'
 ajs = require 'arangojs'
+chance = require('chance').Chance()
+
+arangodb = require '..'
+ArangoDBConnector = arangodb.ArangoDBConnector
+
 
 describe 'arangodb core functionality:', () ->
   ds = null
-  wrong_auth = null
+  config = null
   before () ->
-    # TODO: create the test settings from reading in .loopbackrc
-    ds = getDataSource { url: 'http://connector:connector@192.168.99.100:32769/ConnectorTest' }
+    ds = getDataSource()
   
   describe 'connecting:', () ->
     before () ->
-      # TODO: create the test settings from reading in .loopbackrc and modify it
-      wrong_auth = getDataSource { url: 'http://connector:wrong@192.168.99.100:32768/ConnectorTest' }
+      # get settings for db from .rc file
+      config = require('rc')('loopback',{}).test.arangodb
       generateConnObject = arangodb.generateConnObject
       
       simple_model = ds.define 'SimpleModel', {
@@ -72,9 +74,8 @@ describe 'arangodb core functionality:', () ->
         done()
       
       it 'should create an connection using only the "url" property, ignoring other connection settings', (done) ->
-        # TODO: create the test settings from reading in .loopbackrc and modify it
         settings = {
-          url: 'http://connector:connector@192.168.99.100:32768/ConnectorTest'
+          url: 'http://rightUser:rightPassword@right_host:32768/rightDatabase'
           hostname: 'http://localhost'
           port: 1234
           dataBase: 'NotExistent'
@@ -82,8 +83,8 @@ describe 'arangodb core functionality:', () ->
           password: 'wrongPassword'
         }
         expectedConnObj = {
-          url: 'http://connector:connector@192.168.99.100:32768'
-          databaseName: 'ConnectorTest'
+          url: 'http://rightUser:rightPassword@right_host:32768'
+          databaseName: 'rightDatabase'
           promise: false
         }
         
@@ -92,14 +93,13 @@ describe 'arangodb core functionality:', () ->
         done()
             
       it 'should create an connection using only the "url" property, considers other non-connection settings', (done) ->
-        # TODO: create the test settings from reading in .loopbackrc and modify it
         settings = {
-          url: 'http://connector:connector@192.168.99.100:32768/ConnectorTest'
+          url: 'http://rightUser:rightPassword@right_host:32768/rightDatabase'
           promise: true
         }
         expectedConnObj = {
-          url: 'http://connector:connector@192.168.99.100:32768'
-          databaseName: 'ConnectorTest'
+          url: 'http://rightUser:rightPassword@right_host:32768'
+          databaseName: 'rightDatabase'
           promise: true
         }
         
@@ -110,16 +110,16 @@ describe 'arangodb core functionality:', () ->
       it 'should create an connection using the connection settings when url is not set', (done) ->
         # TODO: create the test settings from reading in .loopbackrc and modify it
         settings = {
-          host: '192.168.99.100'
+          host: 'right_host'
           port: 32768
-          database: 'ConnectorTest'
-          username: 'connector'
-          password: 'connector'
+          database: 'rightDatabase'
+          username: 'rightUser'
+          password: 'rightPassword'
           promise: true
         }
         expectedConnObj = {
-          url: 'http://connector:connector@192.168.99.100:32768'
-          databaseName: 'ConnectorTest'
+          url: 'http://rightUser:rightPassword@right_host:32768'
+          databaseName: 'rightDatabase'
           promise: true
         }
         
@@ -129,17 +129,17 @@ describe 'arangodb core functionality:', () ->
     
     
     # describe 'authentication:', () ->
+    #   wrongAuth = null
     #   it "should throw an error when using wrong credentials", (done) ->
-    #     dsn_config = "arangodb://connector:connector@192.168.99.100:32768/ConnectorTest"
-    #     db = getDataSource dsn_config
-    #     console.log db
-    #     done()
-    #
-    #   it "should connect to the database when using right credentials", (done) ->
-    #     done()
-    #     # dsn_config = "arangodb://connector:connector@192.168.99.100:32768/ConnectorTest"
-    #     # db = getDataSource dsn_config
-    #     # done()
+    #       config.password = 'wrong'
+    #       wrongAuth = getDataSource config
+    #       `(function(){
+    #           wrongAuth.connector.query('FOR year in 2010..2013 RETURN year', function (err, cursor){
+    #             if (err)
+    #               throw err;
+    #           });
+    #        }).should.throw();`
+    #       done()
     
   
   describe 'exposed properties:', () ->
@@ -187,65 +187,79 @@ describe 'arangodb core functionality:', () ->
   
   describe 'conversion', () ->
     it "should convert Loopback Data Types to the respective ArangoDB Data Types", (done) ->
+      firstName = chance.first()
+      lastName = chance.last()
+      birthdate = chance.birthday({ american: false })
+      money = chance.integer {min: 100, max: 1000}
+      lat = chance.latitude()
+      lng = chance.longitude()
+      
       toDB = {
         name:
-          first: 'Navid'
-          last: 'Nikpour'
-        profession: 'IT Consultant'
-        money: 3000
-        birthday: new Date('12.09.1980')
+          first: firstName
+          last: lastName
+        profession: 'Node Developer'
+        money: money
+        birthday: birthdate
         icon: new Buffer('a20')
         active: true
-        likes: ['skiing', 'tennis']
-        location: new GeoPoint { lat: 49.0014277, lng: 8.4070679 }
+        likes: ['nodejs', 'loopback']
+        location: new GeoPoint { lat: lat, lng: lng }
       }
       
       dbData = ds.connector.toDatabase 'ComplexModel', toDB
       expected = {
         name:
-          first: 'Navid'
-          last: 'Nikpour'
-        profession: 'IT Consultant'
-        money: 3000
-        birthday: new Date('12.09.1980')
+          first: firstName
+          last: lastName
+        profession: 'Node Developer'
+        money: money
+        birthday: birthdate
         icon: new Buffer('a20').toString('base64')
         active: true
-        likes: ['skiing', 'tennis']
+        likes: ['nodejs', 'loopback']
         location: 
-          lat: 49.0014277
-          lng: 8.4070679
+          lat: lat
+          lng: lng
       }
       dbData.should.eql expected
       done()
       
     
     it "should convert ArangoDB Types to the respective Loopback Data Types", (done) ->
+      firstName = chance.first()
+      lastName = chance.last()
+      birthdate = chance.birthday({ american: false })
+      money = chance.integer {min: 100, max: 1000}
+      lat = chance.latitude()
+      lng = chance.longitude()
+      
       fromDB = {
         name:
-          first: 'Navid'
-          last: 'Nikpour'
-        profession: 'IT Consultant'
-        money: 3000
-        birthday: new Date('12.09.1980')
+          first: firstName
+          last: lastName
+        profession: 'Node Developer'
+        money: money
+        birthday: birthdate
         icon: new Buffer('a20').toString('base64')
         active: true
-        likes: ['skiing', 'tennis']
+        likes: ['nodejs', 'loopback']
         location: 
-          lat: 49.0014277
-          lng: 8.4070679
+          lat: lat
+          lng: lng
       }
       jsonData = ds.connector.fromDatabase 'ComplexModel', fromDB
       expected = {
         name:
-          first: 'Navid'
-          last: 'Nikpour'
-        profession: 'IT Consultant'
-        money: 3000
-        birthday: new Date('12.09.1980')
+          first: firstName
+          last: lastName
+        profession: 'Node Developer'
+        money: money
+        birthday: birthdate
         icon: new Buffer('a20')
         active: true
-        likes: ['skiing', 'tennis']
-        location: new GeoPoint { lat: 49.0014277, lng: 8.4070679 }
+        likes: ['nodejs', 'loopback']
+        location: new GeoPoint { lat: lat, lng: lng }
       }
       
       jsonData.should.eql expected
