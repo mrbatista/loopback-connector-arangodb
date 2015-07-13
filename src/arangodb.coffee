@@ -348,10 +348,10 @@ class ArangoDBConnector extends Connector
     debug 'create', model, data if @debug
 
     aql = qb.insert('@data').in('@@collection').returnNew('inserted')
-    bindVars = [
+    bindVars = {
       data: data,
       collection: @getCollectionName(model)
-    ]
+    }
 
     @query aql, bindVars, (err, result) ->
       callback err if err
@@ -406,7 +406,7 @@ class ArangoDBConnector extends Connector
       return create_result
 
 
-    @transaction @getCollectionName(model), action, [ id: id, data: data, collection: @getCollectionName(model) ], (err, result) ->
+    @transaction @getCollectionName(model), action, { id: id, data: data, collection: @getCollectionName(model) }, (err, result) ->
       callback err if err
       callback null, result
 
@@ -442,10 +442,10 @@ class ArangoDBConnector extends Connector
     debug 'find', model, id if @debug
 
     aql = qb.for('retDoc').in('@@collection').filter(qb.eq("retDoc._key", '@id')).limit(1).return('retDoc')
-    bindVars = [
+    bindVars = {
       collection: @getCollectionName(model),
       id: id
-    ]
+    }
 
     @query aql, bindVars, (err, result) ->
       callback err if err
@@ -463,10 +463,10 @@ class ArangoDBConnector extends Connector
     debug 'delete', model, id if @debug
 
     aql = qb.for('removeDoc').in('@@collection').filter(qb.eq('removeDoc._key', '@id')).returnOld('removed')
-    bindVars = [
+    bindVars = {
       collection: @getCollectionName(model)
       id: id
-    ]
+    }
 
     @query aql, bindVars, (err, result) ->
       callback err if err
@@ -574,11 +574,11 @@ class ArangoDBConnector extends Connector
         else
           qb.eq "(#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
 
-    return [
+    return {
       aqlArray: aqlArray
       boundVars: boundVars
       geoExpr: geoExpr
-    ]
+    }
 
 
 
@@ -732,10 +732,10 @@ class ArangoDBConnector extends Connector
     returnExpr = if parts.fields? then parts.fields else returnVariable
     aql = aql.return returnExpr
 
-    return [
+    return {
       aql: aql
       boundVars: boundVars
-    ]
+    }
 
 
   ###
@@ -743,7 +743,7 @@ class ArangoDBConnector extends Connector
 
     @param [String] model The model name
     @param [Object] filter The filter
-    @param [Function] [callback] Callback with (possible) error object and list of objects
+    @param [Function] callback Callback with (possible) error object or list of objects
   ###
   all: (model, filter, callback) =>
     all_aql = @_filter2query model, filter
@@ -764,7 +764,7 @@ class ArangoDBConnector extends Connector
 
     @param [String] model The model name
     @param [Object] [where] The filter for where
-    @param [Function] [callback] Callback with (possible) error object and the number of affected objects
+    @param [Function] callback Callback with (possible) error object or the number of affected objects
   ###
   destroyAll: (model, where, callback) =>
     debug 'destroyAll', model, where if @debug
@@ -772,10 +772,10 @@ class ArangoDBConnector extends Connector
     collection = @getCollectionName(model)
     collVariable = collection.charAt 0
 
-    bindVars = [
+    bindVars = {
       collection: collection
       model: collVariable
-    ]
+    }
 
     # for .. in ..
     aql = qb.for('@model').in('@@collection')
@@ -796,8 +796,8 @@ class ArangoDBConnector extends Connector
     Count the number of instances for the given model
 
     @param [String] model The model name
-    @param [Function] [callback] The callback function
-    @param [Function] [callback] Callback with (possible) error object and the number of affected objects
+    @param [Function] callback Callback with (possible) error object or the number of affected objects
+    @param [Object] where The filter for where
   ###
   count: (model, callback, where) =>
     debug 'count', model, where if @debug
@@ -805,10 +805,10 @@ class ArangoDBConnector extends Connector
     collection = @getCollectionName(model)
     collVariable = collection.charAt 0
 
-    bindVars = [
+    bindVars = {
       collection: collection
       model: collVariable
-    ]
+    }
 
     # for .. in ..
     aql = qb.for('@model').in('@@collection')
@@ -831,7 +831,7 @@ class ArangoDBConnector extends Connector
     @param [String] model The model name
     @param [String] id The models id
     @param [Object] data The model data
-    @param [Function] [callback] Callback with (possible) error object and the updated object
+    @param [Function] callback Callback with (possible) error object or the updated object
   ###
   updateAttributes: (model, id, data, cb) =>
     debug 'updateAttributes', model, id, data if @debug
@@ -839,10 +839,10 @@ class ArangoDBConnector extends Connector
     collection = @getCollectionName(model)
     collVariable = collection.charAt 0
 
-    bindVars = [
+    bindVars = {
       collection: collection
       id: id
-    ]
+    }
 
     # for .. in ..
     aql = qb.for('updateDoc').in('@@collection').filter('updateDoc._key','@id').update('updateDoc').with(data).in('@@collection').returnNew('result')
@@ -857,7 +857,7 @@ class ArangoDBConnector extends Connector
     @param [String] model The model name
     @param [Object] where The search criteria
     @param [Object] data The property/value pairs to be updated
-    @param [Function] [callback] Callback with (possible) error object and the number of affected objects
+    @param [Function] callback Callback with (possible) error object or the number of affected objects
   ###
   update: (model, where, data, cb) =>
     return @updateAll model, where, data, cb
@@ -869,10 +869,10 @@ class ArangoDBConnector extends Connector
     collection = @getCollectionName(model)
     collVariable = collection.charAt 0
 
-    bindVars = [
+    bindVars = {
       collection: collection
       model: collVariable
-    ]
+    }
 
     # for .. in ..
     aql = qb.for('@model').in('@@collection')
@@ -1010,6 +1010,5 @@ class ArangoDBConnector extends Connector
         else
           @dataSource.once 'connected', () -> @automigrate models cb
 
-# require('util').inherits ArangoDBConnector, Connector
 
 exports.ArangoDBConnector = ArangoDBConnector
