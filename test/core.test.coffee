@@ -16,18 +16,18 @@ describe 'arangodb core functionality:', () ->
   config = null
   before () ->
     ds = getDataSource()
-  
+
   describe 'connecting:', () ->
     before () ->
       # get settings for db from .rc file
-      config = require('rc')('loopback',{}).test.arangodb
+      config = require('rc')('loopback', {}).test.arangodb
       generateConnObject = arangodb.generateConnObject
-      
+
       simple_model = ds.define 'SimpleModel', {
         name:
           type: String
-      } 
-    
+      }
+
       complex_model = ds.define 'ComplexModel', {
         name:
           type: String
@@ -59,7 +59,7 @@ describe 'arangodb core functionality:', () ->
           arangodb:
             collection: 'Complex'
       }
-    
+
     describe 'connection generator:', () ->
       it 'should create the default connection object when called with an empty settings object', (done) ->
         settings = {}
@@ -68,11 +68,11 @@ describe 'arangodb core functionality:', () ->
           databaseName: 'loopback_db'
           promise: false
         }
-        
+
         connObj = arangodb.generateConnObject settings
         connObj.should.eql expectedConnObj
         done()
-      
+
       it 'should create an connection using only the "url" property, ignoring other connection settings', (done) ->
         settings = {
           url: 'http://rightUser:rightPassword@right_host:32768/rightDatabase'
@@ -87,11 +87,11 @@ describe 'arangodb core functionality:', () ->
           databaseName: 'rightDatabase'
           promise: false
         }
-        
+
         connObj = arangodb.generateConnObject settings
         connObj.should.eql expectedConnObj
         done()
-            
+
       it 'should create an connection using only the "url" property, considers other non-connection settings', (done) ->
         settings = {
           url: 'http://rightUser:rightPassword@right_host:32768/rightDatabase'
@@ -102,11 +102,11 @@ describe 'arangodb core functionality:', () ->
           databaseName: 'rightDatabase'
           promise: true
         }
-        
+
         connObj = arangodb.generateConnObject settings
         connObj.should.eql expectedConnObj
         done()
-      
+
       it 'should create an connection using the connection settings when url is not set', (done) ->
         # TODO: create the test settings from reading in .loopbackrc and modify it
         settings = {
@@ -122,42 +122,42 @@ describe 'arangodb core functionality:', () ->
           databaseName: 'rightDatabase'
           promise: true
         }
-        
+
         connObj = arangodb.generateConnObject settings
         connObj.should.eql expectedConnObj
         done()
-    
-    
-    # describe 'authentication:', () ->
-    #   wrongAuth = null
-    #   it "should throw an error when using wrong credentials", (done) ->
-    #       config.password = 'wrong'
-    #       wrongAuth = getDataSource config
-    #       `(function(){
-    #           wrongAuth.connector.query('FOR year in 2010..2013 RETURN year', function (err, cursor){
-    #             if (err)
-    #               throw err;
-    #           });
-    #        }).should.throw();`
-    #       done()
-    
-  
+
+
+  # describe 'authentication:', () ->
+  #   wrongAuth = null
+  #   it "should throw an error when using wrong credentials", (done) ->
+  #       config.password = 'wrong'
+  #       wrongAuth = getDataSource config
+  #       `(function(){
+  #           wrongAuth.connector.query('FOR year in 2010..2013 RETURN year', function (err, cursor){
+  #             if (err)
+  #               throw err;
+  #           });
+  #        }).should.throw();`
+  #       done()
+
+
   describe 'exposed properties:', () ->
     it 'should expose a property "db" to access the driver directly', (done) ->
       ds.connector.db.should.be.not.null
       ds.connector.db.should.be.ajs
       done()
-  
+
     it 'should expose a property "qb" to access the query builder directly', (done) ->
       ds.connector.qb.should.not.be.null
       ds.connector.qb.should.be.QB
       done()
-    
+
     it 'should expose a property "api" to access the HTTP API directly', (done) ->
       ds.connector.api.should.not.be.null
       ds.connector.api.should.be.Object
       done()
-      
+
     it 'should expose a function "version" which callsback with the version of the database', (done) ->
       ds.connector.getVersion (err, result) ->
         done err if err
@@ -166,34 +166,34 @@ describe 'arangodb core functionality:', () ->
         result.should.have.keys ['server', 'version']
         result.version.should.match /[0-9]+\.[0-9]+\.[0-9]+/
         done()
-  
-  
+
+
   describe 'connector details:', () ->
     it 'should provide a function "getTypes" which returns the array ["db", "nosql", "arangodb"]', (done) ->
       types = ds.connector.getTypes()
-      
+
       types.should.not.be.null
       types.should.be.Array
       types.length.should.be.above(2)
-      types.should.eql ['db','nosql','arangodb']
+      types.should.eql ['db', 'nosql', 'arangodb']
       done()
-    
+
     it 'should provide a function "getDefaultIdType" that returns String', (done) ->
       defaultIdType = ds.connector.getDefaultIdType()
-      
+
       defaultIdType.should.not.be.null
       defaultIdType.should.be.a.class
       done()
-  
+
   describe 'conversion', () ->
     it "should convert Loopback Data Types to the respective ArangoDB Data Types", (done) ->
       firstName = chance.first()
       lastName = chance.last()
-      birthdate = chance.birthday({ american: false })
+      birthdate = chance.birthday({american: false})
       money = chance.integer {min: 100, max: 1000}
       lat = chance.latitude()
       lng = chance.longitude()
-      
+
       toDB = {
         name:
           first: firstName
@@ -204,9 +204,9 @@ describe 'arangodb core functionality:', () ->
         icon: new Buffer('a20')
         active: true
         likes: ['nodejs', 'loopback']
-        location: new GeoPoint { lat: lat, lng: lng }
+        location: new GeoPoint {lat: lat, lng: lng}
       }
-      
+
       dbData = ds.connector.toDatabase 'ComplexModel', toDB
       expected = {
         name:
@@ -218,22 +218,22 @@ describe 'arangodb core functionality:', () ->
         icon: new Buffer('a20').toString('base64')
         active: true
         likes: ['nodejs', 'loopback']
-        location: 
+        location:
           lat: lat
           lng: lng
       }
       dbData.should.eql expected
       done()
-      
-    
+
+
     it "should convert ArangoDB Types to the respective Loopback Data Types", (done) ->
       firstName = chance.first()
       lastName = chance.last()
-      birthdate = chance.birthday({ american: false })
+      birthdate = chance.birthday({american: false})
       money = chance.integer {min: 100, max: 1000}
       lat = chance.latitude()
       lng = chance.longitude()
-      
+
       fromDB = {
         name:
           first: firstName
@@ -244,7 +244,7 @@ describe 'arangodb core functionality:', () ->
         icon: new Buffer('a20').toString('base64')
         active: true
         likes: ['nodejs', 'loopback']
-        location: 
+        location:
           lat: lat
           lng: lng
       }
@@ -259,31 +259,31 @@ describe 'arangodb core functionality:', () ->
         icon: new Buffer('a20')
         active: true
         likes: ['nodejs', 'loopback']
-        location: new GeoPoint { lat: lat, lng: lng }
+        location: new GeoPoint {lat: lat, lng: lng}
       }
-      
+
       jsonData.should.eql expected
       done()
-  
+
   describe 'connector access', () ->
     it "should get the collection name from the name of the model", (done) ->
       simpleCollection = ds.connector.getCollectionName 'SimpleModel'
-      
+
       simpleCollection.should.not.be.null
       simpleCollection.should.be.a.String
       simpleCollection.should.eql 'SimpleModel'
-      
+
       done()
 
     it "should get the collection name from the 'name' property on the 'arangodb' property", (done) ->
       complexCollection = ds.connector.getCollectionName 'ComplexModel'
-      
+
       complexCollection.should.not.be.null
       complexCollection.should.be.a.String
       complexCollection.should.eql 'Complex'
-      
+
       done()
-  
+
   describe 'querying', () ->
     it "should execute a AQL query with no variables provided as a string", (done) ->
       aql_query_string = [
@@ -291,18 +291,18 @@ describe 'arangodb core functionality:', () ->
         "FOR year IN 2010..2013",
         " RETURN year"
       ].join("\n")
-      
+
       ds.connector.query aql_query_string, (err, cursor) ->
         done err if err
         cursor.should.exist
         cursor.all (err, values) ->
           done err if err
-          
+
           values.should.not.be.null
           values.should.be.a.Array
-          values.should.eql [ 2010, 2011, 2012, 2013 ]
+          values.should.eql [2010, 2011, 2012, 2013]
           done()
-    
+
     it "should execute a AQL query with bound variables provided as a string", (done) ->
       aql_query_string = [
         "/* Returns the sequence of integers between 2010 and 2013 (including) */",
@@ -310,18 +310,19 @@ describe 'arangodb core functionality:', () ->
         "  LET following_year = year + @difference",
         "  RETURN { year: year, following: following_year }"
       ].join("\n")
-      
-      ds.connector.query aql_query_string, { difference: 1 }, (err, cursor) ->
+
+      ds.connector.query aql_query_string, {difference: 1}, (err, cursor) ->
         done err if err
         cursor.should.exist
         cursor.all (err, values) ->
           done err if err
-          
+
           values.should.not.be.null
           values.should.be.a.Array
-          values.should.eql [ {year: 2010, following: 2011 }, { year: 2011, following: 2012 }, { year: 2012, following: 2013 }, { year: 2013, following: 2014 } ]
+          values.should.eql [{year: 2010, following: 2011}, {year: 2011, following: 2012},
+            {year: 2012, following: 2013}, {year: 2013, following: 2014}]
           done()
-  
+
     it "should execute a AQL query with no variables provided using the query builder object", (done) ->
       aql_query_object = ds.connector.qb.for('year').in('2010..2013').return('year')
 
@@ -333,40 +334,40 @@ describe 'arangodb core functionality:', () ->
 
           values.should.not.be.null
           values.should.be.a.Array
-          values.should.eql [ 2010, 2011, 2012, 2013 ]
+          values.should.eql [2010, 2011, 2012, 2013]
           done()
 
     it "should execute a AQL query with bound variables provided using the query builder object", (done) ->
       qb = ds.connector.qb
-      
+
       aql = qb.for('year').in('2010..2013')
       aql = aql.let 'following', qb.add(qb.ref('year'), qb.ref('@difference'))
       aql = aql.return {
         year: qb.ref('year'),
         following: qb.ref('following')
       }
-      
-      
-      ds.connector.query aql, { difference: 1 }, (err, cursor) ->
+
+
+      ds.connector.query aql, {difference: 1}, (err, cursor) ->
         done err if err
         cursor.should.exist
         cursor.all (err, values) ->
           done err if err
-          
+
           values.should.not.be.null
           values.should.be.a.Array
-          values.should.eql [ {year: 2010, following: 2011 }, { year: 2011, following: 2012 }, { year: 2012, following: 2013 }, { year: 2013, following: 2014 } ]
+          values.should.eql [{year: 2010, following: 2011}, {year: 2011, following: 2012},
+            {year: 2012, following: 2013}, {year: 2013, following: 2014}]
           done()
-  
-  # TODO: find a way to test transactions
-  # describe 'transaction', () ->
-  #   it "should execute a transaction with the action provided as a string", (done) ->
-  #     done false
-  #
-  #   it "should execute a transaction with the action provided as a function", (done) ->
-  #     done false
-  #
-  #   it "should execute a transaction with the action provided as a function, including parameters", (done) ->
-  #     done false
-    
-    
+
+    # TODO: find a way to test transactions
+    # describe 'transaction', () ->
+    #   it "should execute a transaction with the action provided as a string", (done) ->
+    #     done false
+    #
+    #   it "should execute a transaction with the action provided as a function", (done) ->
+    #     done false
+    #
+    #   it "should execute a transaction with the action provided as a function, including parameters", (done) ->
+    #     done false
+

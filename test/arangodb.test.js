@@ -13,14 +13,14 @@ describe('arangodb connector', function () {
       email: { type: String, index: true, unique: true },
       age: Number,
       icon: Buffer
-    }, {s
+    }, {
       indexes: {
         // The value contains keys and optionally options
         name_age_index: {
           keys: {name: 1, age: -1}
-        }, 
+        },
         // The value itself is for keys
-        age_index: {age: -1} 
+        age_index: {age: -1}
       }
     });
 
