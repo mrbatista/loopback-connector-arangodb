@@ -268,7 +268,6 @@ class ArangoDBConnector extends Connector
 
       # GeoPoint
       if properties[key]?.type is GeoPoint and val?
-        console.log val
         data[key] = val
 
       # TODO: still to come: Boolean, Number, Array and any arbitrary type
@@ -331,7 +330,7 @@ class ArangoDBConnector extends Connector
     else
       @api.get 'version', (err, result) ->
         callback err if err
-        @version = result
+        @version = result.body
         callback null, @version
 
   # @extend require('./CrudMixin')
