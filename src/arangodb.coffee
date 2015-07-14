@@ -304,6 +304,7 @@ class ArangoDBConnector extends Connector
     @param callback [Function] The callback function, called with a (possible) error object and the query's cursor
   ###
   query: (query, bindVars, callback) =>
+    # TODO: if query is instance of AQB use query.toAQL() to print readable AQL query
     debug 'query', query, bindVars if @debug
 
     if typeof bindVars is 'function'
@@ -347,16 +348,14 @@ class ArangoDBConnector extends Connector
   create: (model, data, callback) =>
     debug 'create', model, data if @debug
 
-    aql = qb.insert('@data').in('@@collection').returnNew('inserted')
+    aql = qb.insert('@data').in(@getCollectionName(model)).returnNew('inserted')
     bindVars = {
-      data: data,
-      collection: @getCollectionName(model)
+      data: data
     }
 
     @query aql, bindVars, (err, result) ->
       callback err if err
-      callback null, result[0]._key if result.length > 0
-      callback null, result
+      callback null, result._result[0]._key
 
   ###
     Save the model instance for the given data
