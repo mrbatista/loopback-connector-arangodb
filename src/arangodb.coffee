@@ -304,12 +304,17 @@ class ArangoDBConnector extends Connector
     @param callback [Function] The callback function, called with a (possible) error object and the query's cursor
   ###
   query: (query, bindVars, callback) =>
-    # TODO: if query is instance of AQB use query.toAQL() to print readable AQL query
-    debug 'query', query, bindVars if @debug
-
     if typeof bindVars is 'function'
       callback = bindVars
       bindVars = {}
+
+    if @debug
+      if typeof query is 'object'
+        q = query.toAQL()
+      else
+        q = query
+
+      debug 'query ->', q, '- bindVars ->', bindVars
 
     @db.query query, bindVars, (err, cursor) ->
       # workaround: when there is no error (e.g. wrong AQL syntax etc.) and no cursor, the authentication failed
@@ -348,9 +353,10 @@ class ArangoDBConnector extends Connector
   create: (model, data, callback) =>
     debug 'create', model, data if @debug
 
-    aql = qb.insert('@data').in(@getCollectionName(model)).returnNew('inserted')
+    aql = qb.insert('@data').in('@@collection').returnNew('inserted')
     bindVars = {
-      data: data
+      data: data,
+      '@collection': @getCollectionName(model)
     }
 
     @query aql, bindVars, (err, result) ->
@@ -442,7 +448,7 @@ class ArangoDBConnector extends Connector
 
     aql = qb.for('retDoc').in('@@collection').filter(qb.eq("retDoc._key", '@id')).limit(1).return('retDoc')
     bindVars = {
-      collection: @getCollectionName(model),
+      '@collection': @getCollectionName(model),
       id: id
     }
 
@@ -646,7 +652,7 @@ class ArangoDBConnector extends Connector
     if not filter.where? or typeof filter.where isnt 'object'
       filterWhere = null
     else
-      filterWhere = @_filter2where model, filter, resultVariable
+      filterWhere = @_filter2where model, filter, returnVariable
 
     # =================
     # = filter.fields =
@@ -706,9 +712,9 @@ class ArangoDBConnector extends Connector
     collVariable = collection.charAt 0
     returnVariable = 'result'
 
-    boundVars = []
+    boundVars = {}
 
-    parts = _filter2parts model, filter, returnVariable
+    parts = @_filter2parts model, filter, returnVariable
 
     # define returnVariable
     aql = qb.for(returnVariable)
@@ -722,10 +728,10 @@ class ArangoDBConnector extends Connector
     aql = aql.filter qb.and.apply null, parts.where.aqlArray
 
     # 3) use order to sort result on item level
-    aql = aql.sort.apply null, part.order if parts.order?
+    aql = aql.sort.apply null, parts.order if parts.order?
 
     # 4) use limit to slice result on item level
-    aql = aql.limit.apply null, part.limit if parts.limit?
+    aql = aql.limit.apply null, parts.limit if parts.limit?
 
     # 5) use field to return fields-filterd result on attribute level or plain object
     returnExpr = if parts.fields? then parts.fields else returnVariable
