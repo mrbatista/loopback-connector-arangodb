@@ -493,7 +493,7 @@ class ArangoDBConnector extends Connector
     @option return geoObject [Object] An query builder object containing possible parameters for a geo query
   ###
   _filter2where: (model, filter, returnVariable) =>
-    debug "#[model]: Evaluating where object #[JSON.stringify where]" if @debug
+    debug "Evaluating where object #{JSON.stringify filter} for Model #{model}: " if @debug
 
     # variable to name the result
     returnVariable = returnVariable or 'result'
@@ -543,26 +543,26 @@ class ArangoDBConnector extends Connector
           merge true, boundVars, conditionalPart.boundVars
 
       # If the value is not an array, fall back to regular fields
-      cond2push = switch
+      switch
         # number comparison
         when condOp in ['lte', 'lt', 'gte', 'gt', 'eq', 'neq']
-          qb[condOp] "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
+          aqlArray.push qb[condOp] "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
 
         # range comparison
         when condOp is 'between'
-          [qb.gte("#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue[0])}"),  qb.lte("#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue[1])}")]
+          aqlArray.push [qb.gte("#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue[0])}"),  qb.lte("#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue[1])}")]
 
         # string comparison
         when condOp is 'like'
-          qb.not qb.LIKE "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
+          aqlArray.push qb.not qb.LIKE "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
         when condOp is 'nlike'
-          qb.LIKE "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
+          aqlArray.push qb.LIKE "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
 
         # array comparison
         when condOp is 'nin'
-          qb.not qb.in "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
+          aqlArray.push qb.not qb.in "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
         when condOp is 'in'
-          qb.in "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
+          aqlArray.push qb.in "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
 
         # geo comparison (extra object)
         when 'near'
@@ -579,6 +579,7 @@ class ArangoDBConnector extends Connector
         else
           qb.eq "(#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
 
+    console.log 'aqlArray ', aqlArray
     return {
       aqlArray: aqlArray
       boundVars: boundVars
@@ -718,11 +719,11 @@ class ArangoDBConnector extends Connector
 
     # define returnVariable
     aql = qb.for(returnVariable)
-
+    console.log 'aql_for ', aql
     # 1) check where-part if we have a geo expression that we must include in the in-clause, if not use in-collection
     coll = if parts.where.geoObject? then parts.where.geoObject else '@@collection'
     aql = aql.in(coll)
-
+    console.log 'aql_in ', aql
     # 2) use filter from where-part to filter, merge the boundVars from where into the global boundVars
     merge true, boundVars, parts.where.boundVars
     aql = aql.filter qb.and.apply null, parts.where.aqlArray
@@ -736,7 +737,7 @@ class ArangoDBConnector extends Connector
     # 5) use field to return fields-filterd result on attribute level or plain object
     returnExpr = if parts.fields? then parts.fields else returnVariable
     aql = aql.return returnExpr
-
+    console.log 'aql', aql
     return {
       aql: aql
       boundVars: boundVars
