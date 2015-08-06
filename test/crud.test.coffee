@@ -106,22 +106,22 @@ describe 'arangodb crud functionality:', () ->
     PostWithNumberUnderscoreId.create {_id: 3, content: "test"}, (err, person) ->
       should.not.exist(err)
       person._id.should.be.equal(3)
-    PostWithNumberUnderscoreId.findById person._id, (err, p) ->
-      should.not.exist(err);
-      p.content.should.be.equal('test');
+      PostWithNumberUnderscoreId.findById person._id, (err, p) ->
+        should.not.exist(err);
+        p.content.should.be.equal('test');
 
-      done()
+        done()
 
   it 'should handle correctly type Number for id field _id using string', (done) ->
 
     PostWithNumberUnderscoreId.create {_id: 4, content: 'test'}, (err, person) ->
       should.not.exist(err);
       person._id.should.be.equal(4);
-    PostWithNumberUnderscoreId.findById '4', (err, p) ->
-      should.not.exist(err);
-      p.content.should.be.equal('test');
+      PostWithNumberUnderscoreId.findById '4', (err, p) ->
+        should.not.exist(err);
+        p.content.should.be.equal('test');
 
-      done()
+        done()
 
 #  it 'should allow to find post by id string if `_id` is defined id', (done) ->
 #
@@ -179,19 +179,19 @@ describe 'arangodb crud functionality:', () ->
 #
 #        done()
 
-  it 'all return should honor filter.fields, with `_id` as defined id', (done) ->
-
-    post = new PostWithObjectId {title: 'a', content: 'AAA'}
-    post.save (err, post) ->
-      PostWithObjectId.all {fields: ['title'], where: {title: 'a'}}, (err, posts) ->
-        should.not.exist(err)
-        posts.should.have.lengthOf(1)
-        post = posts[0]
-        post.should.have.property('title', 'a')
-        post.should.have.property('content', undefined)
-        should.not.exist(post._id)
-
-        done()
+#  it 'all return should honor filter.fields, with `_id` as defined id', (done) ->
+#
+#    post = new PostWithObjectId {title: 'a', content: 'AAA'}
+#    post.save (err, post) ->
+#      PostWithObjectId.all {fields: ['title'], where: {title: 'a'}}, (err, posts) ->
+#        should.not.exist(err)
+#        posts.should.have.lengthOf(1)
+#        post = posts[0]
+#        post.should.have.property('title', 'a')
+#        post.should.have.property('content', undefined)
+#        should.not.exist(post._id)
+#
+#        done()
 
   it 'should have created simple User models', (done) ->
 
@@ -301,6 +301,7 @@ describe 'arangodb crud functionality:', () ->
         done(err, results)
 
   it 'should allow to find by number id using where', (done) ->
+
     PostWithNumberId.create {id: 1, title: 'Post1', content: 'Post1 content'}, (err, p1) ->
       PostWithNumberId.create {id: 2, title: 'Post2', content: 'Post2 content'}, (err, p2) ->
         PostWithNumberId.find {where: {id: p1.id}}, (err, p) ->
@@ -312,6 +313,7 @@ describe 'arangodb crud functionality:', () ->
           done()
 
   it 'should allow to find by number id using where inq', (done) ->
+
     PostWithNumberId.create {id: 1, title: 'Post1', content: 'Post1 content'}, (err, p1) ->
       PostWithNumberId.create {id: 2, title: 'Post2', content: 'Post2 content'}, (err, p2) ->
         PostWithNumberId.find {where: {id: {inq: [1]}}}, (err, p) ->
@@ -349,3 +351,468 @@ describe 'arangodb crud functionality:', () ->
         should.not.exist(post._key)
 
         done()
+
+  describe 'updateAll', () ->
+
+    it 'should update the instance matching criteria', (done) ->
+
+      User.create {name: 'Al', age: 31, email:'al@strongloop'}, (err1, createdusers1) ->
+        should.not.exist(err1);
+      User.create {name: 'Simon', age: 32,  email:'simon@strongloop'}, (err2, createdusers2) ->
+        should.not.exist(err2);
+      User.create {name: 'Ray', age: 31,  email:'ray@strongloop'}, (err3, createdusers3) ->
+        should.not.exist(err3);
+
+        User.updateAll {age:31},{company:'strongloop.com'}, (err, updatedusers) ->
+          should.not.exist(err);
+          updatedusers.should.have.property('count', 2);
+
+        User.find {where:{age:31}}, (err2, foundusers) ->
+          should.not.exist(err2);
+          foundusers[0].company.should.be.equal('strongloop.com');
+          foundusers[1].company.should.be.equal('strongloop.com');
+
+          done()
+
+  it 'updateOrCreate should update the instance', (done) ->
+
+    Post.create {title: 'a', content: 'AAA'}, (err, post) ->
+      post.title = 'b';
+      Post.updateOrCreate post, (err, p) ->
+        should.not.exist(err);
+        p.id.should.be.equal(post.id);
+        p.content.should.be.equal(post.content);
+        should.not.exist(p._key);
+
+      Post.findById post.id, (err, p) ->
+        p.id.should.be.eql(post.id);
+        should.not.exist(p._key);
+        p.content.should.be.equal(post.content);
+        p.title.should.be.equal('b');
+
+        done()
+
+  it 'updateOrCreate should update the instance without removing existing properties', (done) ->
+
+    Post.create {title: 'a', content: 'AAA', comments: ['Comment1']}, (err, post) ->
+      post = post.toObject()
+      delete post.title
+      delete post.comments;
+      Post.updateOrCreate post, (err, p) ->
+        should.not.exist(err)
+        p.id.should.be.equal(post.id)
+        p.content.should.be.equal(post.content)
+        should.not.exist(p._key)
+
+        Post.findById post.id, (err, p) ->
+          p.id.should.be.eql(post.id)
+          should.not.exist(p._key)
+          p.content.should.be.equal(post.content)
+          p.title.should.be.equal('a')
+          p.comments[0].should.be.equal('Comment1')
+
+          done()
+
+  it 'updateOrCreate should create a new instance if it does not exist', (done) ->
+
+    post = {id: '123', title: 'a', content: 'AAA'};
+    Post.updateOrCreate post, (err, p) ->
+      should.not.exist(err)
+      p.title.should.be.equal(post.title)
+      p.content.should.be.equal(post.content)
+      p.id.should.be.eql(post.id)
+
+      Post.findById p.id, (err, p) ->
+        p.id.should.be.equal(post.id)
+        should.not.exist(p._id)
+        p.content.should.be.equal(post.content)
+        p.title.should.be.equal(post.title)
+        p.id.should.be.equal(post.id)
+
+        done()
+
+  it 'save should update the instance with the same id', (done) ->
+
+    Post.create {title: 'a', content: 'AAA'}, (err, post) ->
+      post.title = 'b';
+      post.save (err, p) ->
+      should.not.exist(err)
+      p.id.should.be.equal(post.id)
+      p.content.should.be.equal(post.content)
+      should.not.exist(p._key)
+
+      Post.findById post.id, (err, p) ->
+        p.id.should.be.eql(post.id)
+        should.not.exist(p._key)
+        p.content.should.be.equal(post.content)
+        p.title.should.be.equal('b')
+
+        done()
+
+  it 'save should update the instance without removing existing properties', (done) ->
+
+    Post.create {title: 'a', content: 'AAA'}, (err, post) ->
+      delete post.title
+      post.save (err, p) ->
+        should.not.exist(err);
+        p.id.should.be.equal(post.id);
+        p.content.should.be.equal(post.content);
+        should.not.exist(p._key);
+
+        Post.findById post.id, (err, p) ->
+          p.id.should.be.eql(post.id)
+          should.not.exist(p._key)
+          p.content.should.be.equal(post.content)
+          p.title.should.be.equal('a')
+
+          done()
+
+  it 'save should create a new instance if it does not exist', (done) ->
+
+    post = new Post {id: '123', title: 'a', content: 'AAA'}
+    post.save post, (err, p) ->
+      should.not.exist(err);
+      p.title.should.be.equal(post.title);
+      p.content.should.be.equal(post.content);
+      p.id.should.be.equal(post.id);
+
+      Post.findById p.id, (err, p) ->
+        p.id.should.be.equal(post.id);
+        should.not.exist(p._key);
+        p.content.should.be.equal(post.content);
+        p.title.should.be.equal(post.title);
+        p.id.should.be.equal(post.id);
+
+        done()
+
+  it 'all should return object with an id, which is instanceof String, but not mongodb _key', (done) ->
+    post = new Post {title: 'a', content: 'AAA'}
+    post.save (err, post) ->
+      Post.all {where: {title: 'a'}}, (err, posts) ->
+        should.not.exist(err)
+        posts.should.have.lengthOf(1)
+        post = posts[0]
+        post.should.have.property('title', 'a')
+        post.should.have.property('content', 'AAA')
+        post.id.should.be.an.instanceOf(String)
+        should.not.exist(post._key)
+
+        done()
+
+  it 'all return should honor filter.fields', (done) ->
+    post = new Post {title: 'b', content: 'BBB'}
+    post.save (err, post) ->
+      Post.all {fields: ['title'], where: {title: 'b'}}, (err, posts) ->
+        should.not.exist(err);
+        posts.should.have.lengthOf(1);
+        post = posts[0];
+        post.should.have.property('title', 'b');
+        post.should.have.property('content', undefined);
+        should.not.exist(post._key);
+        should.not.exist(post.id);
+
+        done()
+
+  it 'find should order by id if the order is not set for the query filter', (done) ->
+    PostWithStringId.create {id: '2', title: 'c', content: 'CCC'}, (err, post) ->
+      PostWithStringId.create {id: '1', title: 'd', content: 'DDD'}, (err, post) ->
+        PostWithStringId.find (err, posts) ->
+          should.not.exist(err)
+          posts.length.should.be.equal(2)
+          posts[0].id.should.be.equal('1')
+
+    PostWithStringId.find {limit: 1, offset: 0}, (err, posts) ->
+      should.not.exist(err);
+      posts.length.should.be.equal(1)
+      posts[0].id.should.be.equal('1')
+
+    PostWithStringId.find {limit: 1, offset: 1}, (err, posts) ->
+      should.not.exist(err);
+      posts.length.should.be.equal(1)
+      posts[0].id.should.be.equal('2')
+
+      done()
+
+  it 'should report error on duplicate keys', (done) ->
+    Post.create {title: 'd', content: 'DDD'}, (err, post) ->
+      Post.create {id: post.id, title: 'd', content: 'DDD'}, (err, post) ->
+        should.exist(err)
+
+        done()
+
+  it 'should allow to find using like', (done) ->
+
+    Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
+      Post.find {where: {title: {like: 'M.+st'}}}, (err, posts) ->
+        should.not.exist(err)
+        posts.should.have.property('length', 1)
+
+        done()
+
+  it 'should allow to find using case insensitive like', (done) ->
+
+    Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
+      Post.find {where: {title: {like: 'm.+st', options: 'i'}}}, (err, posts) ->
+        should.not.exist(err)
+        posts.should.have.property('length', 1)
+
+        done()
+
+  it 'should allow to find using case insensitive like', (done) ->
+
+    Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
+      Post.find {where: {content: {like: 'HELLO', options: 'i'}}}, (err, posts) ->
+        should.not.exist(err)
+        posts.should.have.property('length', 1)
+
+        done()
+
+  it 'should support like for no match', (done) ->
+
+    Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
+      Post.find {where: {title: {like: 'M.+XY'}}}, (err, posts) ->
+        should.not.exist(err)
+        posts.should.have.property('length', 0)
+
+        done()
+
+  it 'should allow to find using nlike', (done) ->
+
+    Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
+      Post.find {where: {title: {nlike: 'M.+st'}}}, (err, posts) ->
+        should.not.exist(err)
+        posts.should.have.property('length', 0)
+
+        done()
+
+  it 'should allow to find using case insensitive nlike', (done) ->
+
+    Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
+      Post.find {where: {title: {nlike: 'm.+st', options: 'i'}}}, (err, posts) ->
+        should.not.exist(err)
+        posts.should.have.property('length', 0)
+
+        done()
+
+  it 'should support nlike for no match', (done) ->
+
+    Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
+      Post.find {where: {title: {nlike: 'M.+XY'}}}, (err, posts) ->
+        should.not.exist(err)
+        posts.should.have.property('length', 1)
+
+        done()
+
+  it 'should support "and" operator that is satisfied', (done) ->
+
+    Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
+      Post.find {where: {and: [{title: 'My Post'}, {content: 'Hello'}]}}, (err, posts) ->
+        should.not.exist(err)
+        posts.should.have.property('length', 1)
+
+        done()
+
+  it 'should support "and" operator that is not satisfied', (done) ->
+
+    Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
+      Post.find {where: {and: [{title: 'My Post'}, {content: 'Hello1'}]}}, (err, posts) ->
+        should.not.exist(err)
+        posts.should.have.property('length', 0)
+
+        done()
+
+  it 'should support "or" that is satisfied', (done) ->
+
+    Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
+      Post.find {where: {or: [{title: 'My Post'}, {content: 'Hello1'}]}}, (err, posts) ->
+        should.not.exist(err)
+        posts.should.have.property('length', 1)
+        done()
+
+  it 'should support "or" operator that is not satisfied', (done) ->
+
+    Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
+      Post.find {where: {or: [{title: 'My Post1'}, {content: 'Hello1'}]}}, (err, posts) ->
+        should.not.exist(err)
+        posts.should.have.property('length', 0)
+
+        done()
+
+  it 'should support "nor" operator that is satisfied', (done) ->
+
+    Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
+      Post.find {where: {nor: [{title: 'My Post1'}, {content: 'Hello1'}]}}, (err, posts) ->
+        should.not.exist(err)
+        posts.should.have.property('length', 1)
+
+        done()
+
+  it 'should support "nor" operator that is not satisfied', (done) ->
+
+    Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
+      Post.find {where: {nor: [{title: 'My Post'}, {content: 'Hello1'}]}}, (err, posts) ->
+        should.not.exist(err)
+        posts.should.have.property('length', 0)
+
+        done()
+
+  it 'should support neq for match', (done) ->
+
+    Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
+      Post.find {where: {title: {neq: 'XY'}}}, (err, posts) ->
+        should.not.exist(err)
+        posts.should.have.property('length', 1)
+
+        done()
+
+  it 'should support neq for no match', (done) ->
+
+    Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
+      Post.find {where: {title: {neq: 'My Post'}}}, (err, posts) ->
+        should.not.exist(err)
+        posts.should.have.property('length', 0)
+
+        done()
+
+  # The where object should be parsed by the connector
+  it 'should support where for count', (done) ->
+    Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
+      Post.count {and: [{title: 'My Post'}, {content: 'Hello'}]}, (err, count) ->
+        should.not.exist(err)
+        count.should.be.equal(1)
+        Post.count {and: [{title: 'My Post1'}, {content: 'Hello'}]}, (err, count) ->
+          should.not.exist(err)
+          count.should.be.equal(0)
+          done()
+
+  # The where object should be parsed by the connector
+  it 'should support where for destroyAll', (done) ->
+
+    Post.create {title: 'My Post1', content: 'Hello'}, (err, post) ->
+      Post.create {title: 'My Post2', content: 'Hello'}, (err, post) ->
+        Post.destroyAll {and: [
+            {title: 'My Post1'},
+            {content: 'Hello'}
+          ]}, (err) ->
+          should.not.exist(err)
+          Post.count (err, count) ->
+            should.not.exist(err)
+            count.should.be.equal(1)
+            done()
+
+  context 'regexp operator', () ->
+    before () ->
+      deleteExistingTestFixtures (done) ->
+        Post.destroyAll(done)
+
+    beforeEach () ->
+      createTestFixtures (done) ->
+        Post.create [
+          {title: 'a', content: 'AAA'},
+          {title: 'b', content: 'BBB'}
+        ], done
+
+    after () ->
+      deleteTestFixtures (done) ->
+        Post.destroyAll(done);
+
+    context 'with regex strings', () ->
+      context 'using no flags', () ->
+        it 'should work', (done) ->
+          Post.find {where: {content: {regexp: '^A'}}}, (err, posts) ->
+            should.not.exist(err)
+            posts.length.should.equal(1)
+            posts[0].content.should.equal('AAA')
+            done()
+
+      context 'using flags', () ->
+        beforeEach () ->
+          addSpy () ->
+            sinon.stub(console, 'warn');
+
+        afterEach () ->
+          removeSpy ->
+            console.warn.restore();
+
+        it 'should work', (done) ->
+          Post.find {where: {content: {regexp: '^a/i'}}}, (err, posts) ->
+            should.not.exist(err)
+            posts.length.should.equal(1)
+            posts[0].content.should.equal('AAA')
+            done()
+
+        it 'should print a warning when the global flag is set', (done) ->
+            Post.find {where: {content: {regexp: '^a/g'}}}, (err, posts) ->
+              console.warn.calledOnce.should.be.ok
+              done()
+
+    context 'with regex literals', () ->
+      context 'using no flags', () ->
+        it 'should work', (done) ->
+          Post.find {where: {content: {regexp: /^A/}}}, (err, posts) ->
+            should.not.exist(err)
+            posts.length.should.equal(1)
+            posts[0].content.should.equal('AAA')
+            done()
+
+
+      context 'using flags', () ->
+        beforeEach () ->
+          addSpy () ->
+            sinon.stub(console, 'warn')
+
+        afterEach () ->
+          removeSpy () ->
+            console.warn.restore()
+
+
+        it 'should work', (done) ->
+          Post.find {where: {content: {regexp: /^a/i}}}, (err, posts) ->
+            should.not.exist(err)
+            posts.length.should.equal(1)
+            posts[0].content.should.equal('AAA')
+            done()
+
+        it 'should print a warning when the global flag is set', (done) ->
+            Post.find {where: {content: {regexp: /^a/g}}}, (err, posts) ->
+              console.warn.calledOnce.should.be.ok
+              done()
+
+    context 'with regex object', () ->
+      context 'using no flags', () ->
+        it 'should work', (done) ->
+          Post.find {where: {content: {regexp: new RegExp(/^A/)}}}, (err, posts) ->
+            should.not.exist(err)
+            posts.length.should.equal(1)
+            posts[0].content.should.equal('AAA')
+            done()
+
+
+    context 'using flags', () ->
+      beforeEach () ->
+        addSpy () ->
+          sinon.stub(console, 'warn')
+
+      afterEach () ->
+        removeSpy () ->
+          console.warn.restore()
+
+
+      it 'should work', (done) ->
+        Post.find {where: {content: {regexp: new RegExp(/^a/i)}}}, (err, posts) ->
+          should.not.exist(err)
+          posts.length.should.equal(1)
+          posts[0].content.should.equal('AAA')
+          done()
+
+      it 'should print a warning when the global flag is set', (done) ->
+        Post.find {where: {content: {regexp: new RegExp(/^a/g)}}}, (err, posts) ->
+          should.not.exist(err)
+          console.warn.calledOnce.should.be.ok;
+          done()
+
+  after (done) ->
+    User.destroyAll ->
+      Post.destroyAll ->
+        PostWithNumberId.destroyAll ->
+          PostWithNumberUnderscoreId.destroyAll(done)
