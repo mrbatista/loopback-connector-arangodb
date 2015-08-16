@@ -1,15 +1,6 @@
 # This test written in mocha+should.js
 should = require('./init');
 
-#DataSource = require('loopback-datasource-juggler').DataSource
-#GeoPoint = require('loopback-datasource-juggler').GeoPoint
-#QB = require 'aqb'
-#ajs = require 'arangojs'
-#chance = require('chance').Chance()
-#
-#arangodb = require '..'
-#ArangoDBConnector = arangodb.ArangoDBConnector
-
 describe 'arangodb crud functionality:', () ->
   db = null
   User = null

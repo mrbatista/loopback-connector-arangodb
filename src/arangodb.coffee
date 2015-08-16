@@ -2,7 +2,7 @@
 url = require 'url'
 
 # 3rd party modules
-debug = require('debug') 'loopback:connector:arango:main_class'
+debug = require('debug') 'loopback:connector:arango'
 merge = require 'extend'
 _ = require 'underscore'
 Connector = require('loopback-connector').Connector
@@ -469,7 +469,7 @@ class ArangoDBConnector extends Connector
 
     aql = qb.for('removeDoc').in('@@collection').filter(qb.eq('removeDoc._key', '@id')).returnOld('removed')
     bindVars = {
-      collection: @getCollectionName(model)
+      '@collection': @getCollectionName(model)
       id: id
     }
 
@@ -779,20 +779,21 @@ class ArangoDBConnector extends Connector
     collVariable = collection.charAt 0
 
     bindVars = {
-      collection: collection
+      '@collection': collection
       model: collVariable
     }
 
+    returnVariable = 'result'
     # for .. in ..
     aql = qb.for('@model').in('@@collection')
     # filter ...
     if where
-      whereFilter = @buildWhere model, where, modelVariable
+      whereFilter = @buildWhere model, where, returnVariable
       aql = aql.filter qb.and.apply null, whereFilter.aqlArray
       merge true, bindVars, whereFilter.bindVars
 
     # remove ...
-    aql = aql.remove('@model').in('@@collection').returnOld('result')
+    aql = aql.remove('@model').in('@@collection').returnOld(returnVariable)
 
     @query aql, bindVars, (err, result) ->
       callback err if err
