@@ -55,9 +55,8 @@ describe 'arangodb core functionality:', () ->
         location:
           type: GeoPoint
       }, {
-        options:
-          arangodb:
-            collection: 'Complex'
+        arangodb:
+          collection: 'Complex'
       }
 
     describe 'connection generator:', () ->
@@ -93,35 +92,37 @@ describe 'arangodb core functionality:', () ->
         done()
 
       it 'should create an connection using only the "url" property, considers other non-connection settings', (done) ->
-        settings = {
+        settings =
           url: 'http://rightUser:rightPassword@right_host:32768/rightDatabase'
           promise: true
-        }
-        expectedConnObj = {
+
+        expectedConnObj =
           url: 'http://rightUser:rightPassword@right_host:32768'
           databaseName: 'rightDatabase'
           promise: true
-        }
+
 
         connObj = arangodb.generateConnObject settings
         connObj.should.eql expectedConnObj
         done()
 
       it 'should create an connection using the connection settings when url is not set', (done) ->
-        # TODO: create the test settings from reading in .loopbackrc and modify it
-        settings = {
+
+        settings = require('rc')('loopback').test.arangodb
+
+        settings =
           host: 'right_host'
           port: 32768
           database: 'rightDatabase'
           username: 'rightUser'
           password: 'rightPassword'
           promise: true
-        }
-        expectedConnObj = {
+
+        expectedConnObj =
           url: 'http://rightUser:rightPassword@right_host:32768'
           databaseName: 'rightDatabase'
           promise: true
-        }
+
 
         connObj = arangodb.generateConnObject settings
         connObj.should.eql expectedConnObj
@@ -186,44 +187,44 @@ describe 'arangodb core functionality:', () ->
       done()
 
   describe 'conversion', () ->
-    it "should convert Loopback Data Types to the respective ArangoDB Data Types", (done) ->
-      firstName = chance.first()
-      lastName = chance.last()
-      birthdate = chance.birthday({american: false})
-      money = chance.integer {min: 100, max: 1000}
-      lat = chance.latitude()
-      lng = chance.longitude()
-
-      toDB = {
-        name:
-          first: firstName
-          last: lastName
-        profession: 'Node Developer'
-        money: money
-        birthday: birthdate
-        icon: new Buffer('a20')
-        active: true
-        likes: ['nodejs', 'loopback']
-        location: new GeoPoint {lat: lat, lng: lng}
-      }
-
-      dbData = ds.connector.toDatabase 'ComplexModel', toDB
-      expected = {
-        name:
-          first: firstName
-          last: lastName
-        profession: 'Node Developer'
-        money: money
-        birthday: birthdate
-        icon: new Buffer('a20').toString('base64')
-        active: true
-        likes: ['nodejs', 'loopback']
-        location:
-          lat: lat
-          lng: lng
-      }
-      dbData.should.eql expected
-      done()
+#    it "should convert Loopback Data Types to the respective ArangoDB Data Types", (done) ->
+#      firstName = chance.first()
+#      lastName = chance.last()
+#      birthdate = chance.birthday({american: false})
+#      money = chance.integer {min: 100, max: 1000}
+#      lat = chance.latitude()
+#      lng = chance.longitude()
+#
+#      toDB =
+#        name:
+#          first: firstName
+#          last: lastName
+#        profession: 'Node Developer'
+#        money: money
+#        birthday: birthdate
+#        icon: new Buffer('a20')
+#        active: true
+#        likes: ['nodejs', 'loopback']
+#        location: new GeoPoint {lat: lat, lng: lng}
+#
+#
+#      dbData = ds.connector.toDatabase 'ComplexModel', toDB
+#      expected =
+#        name:
+#          first: firstName
+#          last: lastName
+#        profession: 'Node Developer'
+#        money: money
+#        birthday: birthdate
+#        icon: new Buffer('a20').toString('base64')
+#        active: true
+#        likes: ['nodejs', 'loopback']
+#        location:
+#          lat: lat
+#          lng: lng
+#
+#      dbData.should.eql expected
+#      done()
 
 
     it "should convert ArangoDB Types to the respective Loopback Data Types", (done) ->
@@ -234,22 +235,22 @@ describe 'arangodb core functionality:', () ->
       lat = chance.latitude()
       lng = chance.longitude()
 
-      fromDB = {
+      fromDB =
         name:
           first: firstName
           last: lastName
         profession: 'Node Developer'
         money: money
         birthday: birthdate
-        icon: new Buffer('a20').toString('base64')
+        icon: new Buffer('a20').toJSON()
         active: true
         likes: ['nodejs', 'loopback']
         location:
           lat: lat
           lng: lng
-      }
+
       jsonData = ds.connector.fromDatabase 'ComplexModel', fromDB
-      expected = {
+      expected =
         name:
           first: firstName
           last: lastName
@@ -260,7 +261,7 @@ describe 'arangodb core functionality:', () ->
         active: true
         likes: ['nodejs', 'loopback']
         location: new GeoPoint {lat: lat, lng: lng}
-      }
+
 
       jsonData.should.eql expected
       done()
