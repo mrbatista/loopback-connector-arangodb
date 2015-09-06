@@ -14,7 +14,7 @@ ajs = require 'arangojs'
 qb = require 'aqb'
 
 
-generateConnObject = (settings) ->
+exports.generateConnObject = generateConnObject = (settings) ->
   if settings.url
     parsed = url.parse settings.url
 
@@ -51,7 +51,30 @@ generateConnObject = (settings) ->
   }
 
 
-exports.generateConnObject = generateConnObject
+###
+Decide if id should be included
+@param {Object} fields
+@returns {Boolean}
+@private
+###
+_idIncluded = (fields, idName) ->
+  if !fields then return true
+
+  if Array.isArray(fields)
+    return fields.indexOf(idName) >= 0
+
+  if fields[idName]
+    # Included
+    return true
+
+  if idName in fields and !fields[idName]
+    # Excluded
+    return false
+
+  for f in fields
+    return !fields[f]; # If the fields has exclusion
+
+  return true
 
 
 ###
@@ -418,32 +441,6 @@ class ArangoDBConnector extends Connector
       callback null, result._result
 
 
-  ###
-   Decide if id should be included
-   @param {Object} fields
-   @returns {Boolean}
-   @private
-  ###
-  _idIncluded: (fields, idName) ->
-    if !fields then return true
-
-    if Array.isArray(fields)
-      return fields.indexOf(idName) >= 0
-
-    if fields[idName]
-      # Included
-      return true
-
-    if idName in fields and !fields[idName]
-      # Excluded
-      return false
-
-    for f in fields
-      return !fields[f]; # If the fields has exclusion
-
-    return true
-
-
   # ========================
   # = Collection functions =
   # ========================
@@ -628,7 +625,7 @@ class ArangoDBConnector extends Connector
       return callback err if err
 
       cursorToArray = (r) ->
-        if self._idIncluded(filter.fields, idName)
+        if _idIncluded(filter.fields, idName)
           self.setIdValue(model, r, r._key)
         # Don't pass back _key if the fields is set
         if idName isnt '_key' then delete r._key;
