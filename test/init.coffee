@@ -7,11 +7,11 @@ global.getDataSource = global.getSchema = (customConfig) ->
   # get fallback config from .loopbackrc
   rc_defaults =
     test:
-      arangodb: {
+      arangodb:
         host: "127.0.0.1"
         port: 8529
         db: '_system'
-      }
+
 
   config = require('rc')('loopback', rc_defaults).test.arangodb
 

@@ -1,14 +1,14 @@
 # This test written in mocha+should.js
 should = require('./init');
 
-describe 'arangodb crud functionality:', () ->
+describe 'arangodb connector:', () ->
   db = null
   User = null
   Post = null
   Product = null
   PostWithNumberId = null
   PostWithStringId = null
-  PostWithObjectId = null
+  PostWithStringKey = null
   PostWithNumberUnderscoreId = null
 
   before () ->
@@ -69,6 +69,12 @@ describe 'arangodb crud functionality:', () ->
       content: { type: String }
     });
 
+    PostWithStringKey = db.define('PostWithStringKey', {
+      _key: {type: String, id: true},
+      title: { type: String, length: 255, index: true },
+      content: { type: String }
+    });
+
     PostWithNumberUnderscoreId = db.define('PostWithNumberUnderscoreId', {
       _id: {type: Number, id: true},
       title: { type: String, length: 255, index: true },
@@ -84,15 +90,16 @@ describe 'arangodb crud functionality:', () ->
     User.hasMany(Post);
     Post.belongsTo(User);
 
-    beforeEach (done) ->
-      User.settings.arangodb = {};
-      User.destroyAll ->
-        Post.destroyAll ->
-          PostWithNumberId.destroyAll ->
-            PostWithNumberUnderscoreId.destroyAll ->
-              PostWithStringId.destroyAll ->
+    db.automigrate()
 
-              done()
+  beforeEach (done) ->
+    User.settings.arangodb = {};
+    User.destroyAll ->
+      Post.destroyAll ->
+        PostWithNumberId.destroyAll ->
+          PostWithNumberUnderscoreId.destroyAll ->
+            PostWithStringId.destroyAll ->
+              PostWithStringKey.destroyAll(done)
 
   it 'should handle correctly type Number for id field _id', (done) ->
 
@@ -105,7 +112,7 @@ describe 'arangodb crud functionality:', () ->
 
         done()
 
-  it 'should handle correctly type Number for id field _id using string', (done) ->
+  it 'should handle correctly type Number for id field _id using String', (done) ->
 
     PostWithNumberUnderscoreId.create {_id: 4, content: 'test'}, (err, person) ->
       should.not.exist(err)
@@ -116,75 +123,144 @@ describe 'arangodb crud functionality:', () ->
 
         done()
 
-#  it 'should allow to find post by id string if `_id` is defined id', (done) ->
-#
-#    PostWithObjectId.create (err, post) ->
-#      PostWithObjectId.find {where: {_id: post._id.toString()}}, (err, p) ->
-#      should.not.exist(err)
-#      post = p[0]
-#      should.exist(post)
-#      post._id.should.be.an.instanceOf(db.ObjectID);
-#
-#      done()
+  it 'should allow to find post by id string if `_id` is defined id', (done) ->
 
-#  it 'find with `_id` as defined id should return an object with _id instanceof ObjectID', (done) ->
-#
-#    PostWithObjectId.create (err, post) ->
-#      PostWithObjectId.findById post._id, (err, post) ->
-#        should.not.exist(err)
-#        post._id.should.be.an.instanceOf(db.ObjectID)
-#
-#        done()
+    PostWithNumberUnderscoreId.create (err, post) ->
+      PostWithNumberUnderscoreId.find {where: {_id: post._id.toString()}}, (err, p) ->
+        should.not.exist(err)
+        post = p[0]
+        should.exist(post)
+        post._id.should.be.an.instanceOf(Number);
 
-#  it 'should update the instance with `_id` as defined id', (done) ->
-#
-#    PostWithObjectId.create {title: 'a', content: 'AAA'}, (err, post) ->
-#      post.title = 'b'
-#      PostWithObjectId.updateOrCreate post, (err, p) ->
-#        should.not.exist(err)
-#        p._id.should.be.equal(post._id)
-#      PostWithObjectId.findById post._id, (err, p) ->
-#        should.not.exist(err)
-#        p._id.should.be.eql(post._id)
-#        p.content.should.be.equal(post.content)
-#        p.title.should.be.equal('b')
-#      PostWithObjectId.find {where: {title: 'b'}}, (err, posts) ->
-#        should.not.exist(err)
-#        p = posts[0]
-#        p._id.should.be.eql(post._id)
-#        p.content.should.be.equal(post.content)
-#        p.title.should.be.equal('b')
-#        posts.should.have.lengthOf(1)
-#
-#        done()
+      done()
 
-#  it('all should return object (with `_id` as defined id) with an _id instanceof ObjectID', function (done) ->
-#
-#    post = new PostWithObjectId({title: 'a', content: 'AAA'})
-#    post.save (err, post) ->
-#      PostWithObjectId.all {where: {title: 'a'}}, (err, posts) ->
-#        should.not.exist(err)
-#        posts.should.have.lengthOf(1)
-#        post = posts[0]
-#        post.should.have.property('title', 'a')
-#        post.should.have.property('content', 'AAA')
-#        post._id.should.be.an.instanceOf(db.ObjectID)
-#
-#        done()
+  it 'find with `_id` as defined id should return an object with _id instanceof String', (done) ->
 
-#  it 'all return should honor filter.fields, with `_id` as defined id', (done) ->
-#
-#    post = new PostWithObjectId {title: 'a', content: 'AAA'}
-#    post.save (err, post) ->
-#      PostWithObjectId.all {fields: ['title'], where: {title: 'a'}}, (err, posts) ->
-#        should.not.exist(err)
-#        posts.should.have.lengthOf(1)
-#        post = posts[0]
-#        post.should.have.property('title', 'a')
-#        post.should.have.property('content', undefined)
-#        should.not.exist(post._id)
-#
-#        done()
+    PostWithNumberUnderscoreId.create (err, post) ->
+      PostWithNumberUnderscoreId.findById post._id, (err, post) ->
+        should.not.exist(err)
+        post._id.should.be.an.instanceOf(Number)
+
+        done()
+
+  it 'should update the instance with `_id` as defined id', (done) ->
+
+    PostWithNumberUnderscoreId.create {title: 'a', content: 'AAA'}, (err, post) ->
+      post.title = 'b'
+      PostWithNumberUnderscoreId.updateOrCreate post, (err, p) ->
+        should.not.exist(err)
+        p._id.should.be.equal(post._id)
+        PostWithNumberUnderscoreId.findById post._id, (err, p) ->
+          should.not.exist(err)
+          p._id.should.be.eql(post._id)
+          p.content.should.be.equal(post.content)
+          p.title.should.be.equal('b')
+          PostWithNumberUnderscoreId.find {where: {title: 'b'}}, (err, posts) ->
+            should.not.exist(err)
+            p = posts[0]
+            p._id.should.be.eql(post._id)
+            p.content.should.be.equal(post.content)
+            p.title.should.be.equal('b')
+            posts.should.have.lengthOf(1)
+
+            done()
+
+  it 'all should return object (with `_id` as defined id) with an _id instanceof String', (done) ->
+
+    post = new PostWithNumberUnderscoreId({title: 'a', content: 'AAA'})
+    post.save (err, post) ->
+      PostWithNumberUnderscoreId.all {where: {title: 'a'}}, (err, posts) ->
+        should.not.exist(err)
+        posts.should.have.lengthOf(1)
+        post = posts[0]
+        post.should.have.property('title', 'a')
+        post.should.have.property('content', 'AAA')
+        post._id.should.be.an.instanceOf(Number)
+
+        done()
+
+  it 'all return should honor filter.fields, with `_id` as defined id', (done) ->
+
+    post = new PostWithNumberUnderscoreId {title: 'a', content: 'AAA'}
+    post.save (err, post) ->
+      PostWithNumberUnderscoreId.all {fields: ['title'], where: {title: 'a'}}, (err, posts) ->
+        should.not.exist(err)
+        posts.should.have.lengthOf(1)
+        post = posts[0]
+        post.should.have.property('title', 'a')
+        post.should.have.property('content', undefined)
+        should.not.exist(post._id)
+
+        done()
+
+  it 'should allow to find post by id string if `_key` is defined id', (done) ->
+
+    PostWithStringKey.create (err, post) ->
+      PostWithStringKey.find {where: {_key: post._key.toString()}}, (err, p) ->
+        should.not.exist(err)
+        post = p[0]
+        should.exist(post)
+        post._key.should.be.an.instanceOf(String);
+
+      done()
+
+  it 'find with `_key` as defined id should return an object with _key instanceof String', (done) ->
+
+    PostWithStringKey.create (err, post) ->
+      PostWithStringKey.findById post._key, (err, post) ->
+        should.not.exist(err)
+        post._key.should.be.an.instanceOf(String)
+        done()
+
+  it 'should update the instance with `_key` as defined id', (done) ->
+
+    PostWithStringKey.create {title: 'a', content: 'AAA'}, (err, post) ->
+      post.title = 'b'
+      PostWithStringKey.updateOrCreate post, (err, p) ->
+        should.not.exist(err)
+        p._key.should.be.equal(post._key)
+        PostWithStringKey.findById post._key, (err, p) ->
+          should.not.exist(err)
+          p._key.should.be.eql(post._key)
+          p.content.should.be.equal(post.content)
+          p.title.should.be.equal('b')
+          PostWithStringKey.find {where: {title: 'b'}}, (err, posts) ->
+            should.not.exist(err)
+            p = posts[0]
+            p._key.should.be.eql(post._key)
+            p.content.should.be.equal(post.content)
+            p.title.should.be.equal('b')
+            posts.should.have.lengthOf(1)
+
+            done()
+
+  it 'all should return object (with `_key` as defined id) with an _key instanceof String', (done) ->
+
+    post = new PostWithStringKey({title: 'a', content: 'AAA'})
+    post.save (err, post) ->
+      PostWithStringKey.all {where: {title: 'a'}}, (err, posts) ->
+        should.not.exist(err)
+        posts.should.have.lengthOf(1)
+        post = posts[0]
+        post.should.have.property('title', 'a')
+        post.should.have.property('content', 'AAA')
+        post._key.should.be.an.instanceOf(String)
+
+        done()
+
+  it 'all return should honor filter.fields, with `_key` as defined id', (done) ->
+
+    post = new PostWithStringKey {title: 'a', content: 'AAA'}
+    post.save (err, post) ->
+      PostWithStringKey.all {fields: ['title'], where: {title: 'a'}}, (err, posts) ->
+        should.not.exist(err)
+        posts.should.have.lengthOf(1)
+        post = posts[0]
+        post.should.have.property('title', 'a')
+        post.should.have.property('content', undefined)
+        should.not.exist(post._key)
+
+        done()
 
   it 'should have created simple User models', (done) ->
 
@@ -272,28 +348,28 @@ describe 'arangodb crud functionality:', () ->
 
 #  it 'should invoke hooks', (done) ->
 #
-#    events = [];
-#    connector = Post.getDataSource().connector;
+#    events = []
+#    connector = Post.getDataSource().connector
 #    connector.observe 'before execute', (ctx, next) ->
-#      ctx.req.command.should.be.string;
-#      ctx.req.params.should.be.array;
-#      events.push 'before execute ' + ctx.req.command
+#      ctx.req.aql.should.be.string;
+#      ctx.req.params.should.be.Object;
+#      events.push 'before execute'
 #      next()
 #
 #    connector.observe 'after execute', (ctx, next) ->
-#      ctx.res.should.be.object
-#      events.push 'after execute ' + ctx.req.command
+#      ctx.res.should.be.Object
+#      events.push 'after execute'
 #      next()
 #
 #    Post.create {title: 'Post1', content: 'Post1 content'}, (err, p1) ->
 #      Post.find (err, results) ->
-#        events.should.eql(['before execute insert', 'after execute insert',
-#          'before execute find', 'after execute find'])
+#        events.should.eql(['before execute', 'after execute',
+#          'before execute', 'after execute'])
 #        connector.clearObservers 'before execute'
 #        connector.clearObservers 'after execute'
 #
 #        done(err, results)
-#
+
 
   it 'should allow to find by number id using where', (done) ->
 
@@ -348,13 +424,23 @@ describe 'arangodb crud functionality:', () ->
 
         done()
 
+
+  it 'should update attribute of the specific instance', (done) ->
+
+    User.create {name: 'Al', age: 31, email:'al@'}, (err, createdusers) ->
+      createdusers.updateAttributes {age: 32, email:'al@strongloop'}, (err, updated) ->
+        should.not.exist(err)
+        updated.age.should.be.equal(32)
+        updated.email.should.be.equal('al@strongloop')
+        done()
+
   describe 'updateAll', () ->
 
     it 'should update the instance matching criteria', (done) ->
 
-      User.create {name: 'Al', age: 31, email:'al@strongloop'}, (err, createdusers1) ->
-        User.create {name: 'Simon', age: 32,  email:'simon@strongloop'}, (err, createdusers2) ->
-          User.create {name: 'Ray', age: 31,  email:'ray@strongloop'}, (err, createdusers3) ->
+      User.create {name: 'Al', age: 31, email:'al@strongloop'}, (err, createdusers) ->
+        User.create {name: 'Simon', age: 32,  email:'simon@strongloop'}, (err, createdusers) ->
+          User.create {name: 'Ray', age: 31,  email:'ray@strongloop'}, (err, createdusers) ->
             User.updateAll {age:31},{company:'strongloop.com'}, (err, updatedusers) ->
               should.not.exist(err)
               updatedusers.should.have.property('count', 2);
@@ -364,6 +450,7 @@ describe 'arangodb crud functionality:', () ->
                 foundusers[1].company.should.be.equal('strongloop.com')
 
                 done()
+
 
   it 'updateOrCreate should update the instance', (done) ->
 
@@ -492,12 +579,11 @@ describe 'arangodb crud functionality:', () ->
 
         done()
 
-  #TODO: check filter.fields
   it 'all return should honor filter.fields', (done) ->
 
     post = new Post {title: 'b', content: 'BBB'}
     post.save (err, post) ->
-      Post.all {fields: ['title'], where: {title: 'b'}}, (err, posts) ->
+      Post.all {fields: ['title'], where: {content: 'BBB'}}, (err, posts) ->
         should.not.exist(err)
         posts.should.have.lengthOf(1)
         post = posts[0]
@@ -529,7 +615,34 @@ describe 'arangodb crud functionality:', () ->
 
               done()
 
+  it 'order by specific query filter', (done) ->
+
+    PostWithStringId.create {id: '2', title: 'c', content: 'CCC'}, (err, post) ->
+      PostWithStringId.create {id: '1', title: 'd', content: 'DDD'}, (err, post) ->
+        PostWithStringId.create {id: '3', title: 'd', content: 'AAA'}, (err, post) ->
+          PostWithStringId.find {order: ['title DESC', 'content ASC']}, (err, posts) ->
+            posts.length.should.be.equal(3)
+            posts[0].id.should.be.equal('3')
+
+            PostWithStringId.find {order: ['title DESC', 'content ASC'], limit: 1, offset: 0}, (err, posts) ->
+              should.not.exist(err)
+              posts.length.should.be.equal(1)
+              posts[0].id.should.be.equal('3')
+
+              PostWithStringId.find {order: ['title DESC', 'content ASC'], limit: 1, offset: 1}, (err, posts) ->
+                should.not.exist(err)
+                posts.length.should.be.equal(1)
+                posts[0].id.should.be.equal('2')
+
+              PostWithStringId.find {order: ['title DESC', 'content ASC'], limit: 1, offset: 2}, (err, posts) ->
+                should.not.exist(err)
+                posts.length.should.be.equal(1)
+                posts[0].id.should.be.equal('1')
+
+                done()
+
   it 'should report error on duplicate keys', (done) ->
+
     Post.create {title: 'd', content: 'DDD'}, (err, post) ->
       Post.create {id: post.id, title: 'd', content: 'DDD'}, (err, post) ->
         should.exist(err)
@@ -815,4 +928,6 @@ describe 'arangodb crud functionality:', () ->
     User.destroyAll ->
       Post.destroyAll ->
         PostWithNumberId.destroyAll ->
-          PostWithNumberUnderscoreId.destroyAll(done)
+          PostWithStringId.destroyAll ->
+            PostWithStringKey.destroyAll ->
+              PostWithNumberUnderscoreId.destroyAll(done)

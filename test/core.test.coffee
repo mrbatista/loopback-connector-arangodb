@@ -62,30 +62,30 @@ describe 'arangodb core functionality:', () ->
     describe 'connection generator:', () ->
       it 'should create the default connection object when called with an empty settings object', (done) ->
         settings = {}
-        expectedConnObj = {
+        expectedConnObj =
           url: 'http://127.0.0.1:8529'
           databaseName: 'loopback_db'
           promise: false
-        }
+
 
         connObj = arangodb.generateConnObject settings
         connObj.should.eql expectedConnObj
         done()
 
       it 'should create an connection using only the "url" property, ignoring other connection settings', (done) ->
-        settings = {
+        settings =
           url: 'http://rightUser:rightPassword@right_host:32768/rightDatabase'
           hostname: 'http://localhost'
           port: 1234
           dataBase: 'NotExistent'
           username: 'wrongUser'
           password: 'wrongPassword'
-        }
-        expectedConnObj = {
+
+        expectedConnObj =
           url: 'http://rightUser:rightPassword@right_host:32768'
           databaseName: 'rightDatabase'
           promise: false
-        }
+
 
         connObj = arangodb.generateConnObject settings
         connObj.should.eql expectedConnObj
@@ -360,15 +360,3 @@ describe 'arangodb core functionality:', () ->
           values.should.eql [{year: 2010, following: 2011}, {year: 2011, following: 2012},
             {year: 2012, following: 2013}, {year: 2013, following: 2014}]
           done()
-
-    # TODO: find a way to test transactions
-    # describe 'transaction', () ->
-    #   it "should execute a transaction with the action provided as a string", (done) ->
-    #     done false
-    #
-    #   it "should execute a transaction with the action provided as a function", (done) ->
-    #     done false
-    #
-    #   it "should execute a transaction with the action provided as a function, including parameters", (done) ->
-    #     done false
-
