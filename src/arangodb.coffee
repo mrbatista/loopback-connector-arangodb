@@ -1,16 +1,20 @@
 # node modules
-url = require 'url'
 
-# 3rd party modules
-debug = require('debug') 'loopback:connector:arango'
+# Module dependencies
+url = require 'url'
 merge = require 'extend'
+async = require('async')
 _ = require 'underscore'
 Connector = require('loopback-connector').Connector
 GeoPoint = require('loopback-datasource-juggler').GeoPoint
+debug = require('debug') 'loopback:connector:arango'
 
 # arango
 ajs = require 'arangojs'
 qb = require 'aqb'
+
+returnVariable = 'result'
+
 
 generateConnObject = (settings) ->
   if settings.url
@@ -42,16 +46,16 @@ generateConnObject = (settings) ->
 
   # TODO: add more arango specifig objects for a connection
 
-  config = {
+  return {
     url: dbUrl
     databaseName: database
     promise: promise
   }
 
-  return config
-
 
 exports.generateConnObject = generateConnObject
+
+
 ###
   Initialize the ArangoDB connector for the given data source
 
@@ -109,18 +113,17 @@ class ArangoDBConnector extends Connector
     super 'arangodb', settings
     # debug
     @debug = dataSource.settings.debug or debug.enabled
-    debug 'constructor called' if @debug
-
 
     # link to datasource
     @dataSource = dataSource
 
-
     # Query builder
     @qb = require('aqb')
 
-    @db = require('arangojs') @settings
+    @db = ajs @settings
+
     @api = @db.route '_api'
+
 
   # one file per functionality
   # @extend require('./CoreMixin')
@@ -132,8 +135,10 @@ class ArangoDBConnector extends Connector
 
     @param callback [Function] The callback function, called the with created connection
   ###
-  connect: (callback) =>
-    debug 'connect called' if @debug
+  connect: (callback) ->
+
+    debug "ArangoDB connection is called with settings: #{JSON.stringify @settings}" if @debug
+
     process.nextTick () ->
       callback && callback null, @db
 
@@ -142,7 +147,7 @@ class ArangoDBConnector extends Connector
 
     @return [Array<String>] The types of connectors this connector belongs to
   ###
-  getTypes: () =>
+  getTypes: () ->
     return ['db', 'nosql', 'arangodb']
 
 
@@ -152,7 +157,7 @@ class ArangoDBConnector extends Connector
     @return [Object] The class to build the Id Value with
 
   ###
-  getDefaultIdType: () =>
+  getDefaultIdType: () ->
     return String
 
   ###
@@ -162,7 +167,7 @@ class ArangoDBConnector extends Connector
 
     @return [Object] The model class of this model
   ###
-  getModelClass: (model) =>
+  getModelClass: (model) ->
     return @_models[model]
 
 
@@ -173,9 +178,11 @@ class ArangoDBConnector extends Connector
 
     @return [Object] The collection name for this model
   ###
-  getCollectionName: (model) =>
-    if @getModelClass(model).settings.options?.arangodb?
-      model = @getModelClass(model).settings.options?.arangodb?.collection or model
+  getCollectionName: (model) ->
+    modelClass = @getModelClass(model)
+
+    if modelClass.settings.arangodb
+      model = modelClass.settings.arangodb?.collection or model
 
     return model
 
@@ -188,139 +195,68 @@ class ArangoDBConnector extends Connector
 
     @return [Object] The converted data as an JSON Object
   ###
-  fromDatabase: (model, data) =>
+  fromDatabase: (model, data) ->
     return null if not data?
 
-    properties = @getModelClass(model).properties
+    props = @getModelClass(model).properties
 
-    for key, val of data
-      # change _key value to an id property and then delete _id (database wide doc handle) and _key (collection wide doc handle)
-      if key in ['_key', '_id']
-        data.id = switch
-          when key is '_key' then val
-          when key is '_id' then val.split('/')[0]
-        delete data[key]
-        continue
-
-      # Buffer
-      if properties[key]?.type is Buffer and val?
-        data[key] = new Buffer(val, 'base64')
-
-      # TODO: Look how to read ArangoDB binary data into a buffer
-      # if properties[key]?.type is Buffer and val?
-      #   #from binary
-      #   if(data[p] instanceof mongodb.Binary) [
-      #     // Convert the Binary into Buffer
-      #     data[p] = data[p].read(0, data[p].length());
-      #   ]
-
-      # String
-      # if properties[key]?.type is String and val?
-      #   # from binary
-      #   if(data[p] instanceof mongodb.Binary) [
-      #     // Convert the Binary into String
-      #     data[p] = data[p].toString();
-      #   ]
+    for key, val of props
+      #Buffer type
+      if data[key]? and val? and val.type is Buffer
+        data[key] = new Buffer(data[key])
 
       # Date
-      if properties[key]?.type is Date and val?
-        data[key] = new Date val
+      if data[key]? and val? and val.type is Date
+        data[key] = new Date data[key]
 
       # GeoPoint
-      if properties[key]?.type is GeoPoint and val?
-        data[key] = new GeoPoint { lat: val.lat, lng: val.lng }
-
-      # TODO: still to come: Boolean, Number, Array and any arbitrary type
+      if data[key]? and val? and val.type is GeoPoint
+        data[key] = new GeoPoint { lat: data[key].lat, lng: data[key].lng }
 
     return data
 
 
-
   ###
-    Converts JSON to insert into the database, based on the properties of a given model
-
-    @param model [String] The model name to look up the properties
-    @param data [Object] The JSON object to transferred to the database
-
-    @return [Object] The converted data as an Plain Javascript Object
-  ###
-  toDatabase: (model, data) =>
-    return null if not data?
-
-    properties = @getModelClass(model).properties
-
-    for key, val of data
-      # change _key value to an id property and then delete _id (database wide doc handle) and _key (collection wide doc handle)
-      if key in ['_key', '_id']
-        data.id = switch
-          when key is '_key' then val
-          when key is '_id' then val.split('/')[0]
-        delete data[key]
-        continue
-
-      # Buffer
-      if properties[key]?.type is Buffer and val?
-        data[key] = val.toString('base64')
-
-      # Date
-      if properties[key]?.type is Date and val?
-        data[key] = new Date val
-
-      # GeoPoint
-      if properties[key]?.type is GeoPoint and val?
-        data[key] = val
-
-      # TODO: still to come: Boolean, Number, Array and any arbitrary type
-
-    return data
-
-
-
-  ###
-    Transaction
-
-    @param collections [Object|Array|String] collection(s) to lock
-    @param action [String] Function to evaluate
-    @param params [Object] Parameter to call the action function with
-    @param callback [Function] The callback function, called with a (possible) error object and the transactions result
-  ###
-  transaction: (collections, action, params, callback) =>
-    # empty params by default
-    params = params or []
-
-    # evaluate action to a string, if not already one
-    # TODO: examine if function, make sure that when there is a params parameter function has the same param count in numbers
-    action = if typeof action isnt String then String(action) else action
-
-    @db.transaction collections, action, params, (err, result) ->
-      callback err if err
-      callback null, result
-
-  ###
-    Query with AQL and binded variables
+    Execute a query with AQL and binded variables
 
     @param query [String|Object] The AQL query to execute
     @param bindVars [Object] The variables bound to the AQL query
     @param callback [Function] The callback function, called with a (possible) error object and the query's cursor
   ###
-  query: (query, bindVars, callback) =>
-    if typeof bindVars is 'function'
+  execute: (query, bindVars, callback) ->
+
+    self = this
+
+    if typeof bindVars is 'function' and !callback?
       callback = bindVars
       bindVars = {}
 
+    context =
+      req:
+        aql: query
+        params: bindVars
+
+    @notifyObserversAround 'execute', context, (context, done) ->
+      self.executeAQL context.req.aql, context.req.params, (err, result) ->
+        context.res = result and result._result
+        done err, result
+    , callback
+
+
+  executeAQL: (query, bindVars, callback) ->
     if @debug
-      if typeof query is 'object'
+      if typeof query.toAQL is 'function'
         q = query.toAQL()
       else
         q = query
 
-      debug 'query ->', q, '- bindVars ->', bindVars
+      debug "query: #{q} bindVars: #{JSON.stringify bindVars}"
 
     @db.query query, bindVars, (err, cursor) ->
       # workaround: when there is no error (e.g. wrong AQL syntax etc.) and no cursor, the authentication failed
       if not err? and cursor.length = 0
         authErr = new Error 'Authentication failed'
-        callback authErr, null
+        callback authErr
       else
         callback err, cursor
 
@@ -330,7 +266,7 @@ class ArangoDBConnector extends Connector
 
     @param callback [Function] The calback function, called with a (possible) error object and the server versio
   ###
-  getVersion: (callback) =>
+  getVersion: (callback) ->
     if @version?
       callback null, @version
     else
@@ -338,6 +274,7 @@ class ArangoDBConnector extends Connector
         callback err if err
         @version = result.body
         callback null, @version
+
 
   # @extend require('./CrudMixin')
   # ==============
@@ -350,18 +287,42 @@ class ArangoDBConnector extends Connector
     @param data [Object] The data to create
     @param callback [Function] The callback function, called with a (possible) error object and the created object's id
   ###
-  create: (model, data, callback) =>
-    debug 'create', model, data if @debug
+  create: (model, data, callback) ->
+    debug "create model #{model} with data: #{JSON.stringify data}" if @debug
+
+    self = this
+
+    idValue = @getIdValue(model, data)
+    idName = @idName(model)
+
+    if !idValue? or typeof idValue is 'undefined'
+      delete data[idName]
+    else
+      id = @getDefaultIdType()(idValue) if typeof idValue isnt @getDefaultIdType()
+      data._key = id
+      delete data[idName] if idName isnt '_key'
 
     aql = qb.insert('@data').in('@@collection').returnNew('inserted')
-    bindVars = {
+    bindVars =
       data: data,
-      '@collection': @getCollectionName(model)
-    }
+      '@collection': @getCollectionName model
 
-    @query aql, bindVars, (err, result) ->
-      callback err if err
-      callback null, result._result[0]._key
+
+    @execute aql, bindVars, (err, result) ->
+      return callback(err) if err
+
+      idValue = result._result[0]._key
+      modelClass = self._models[model]
+      idType = modelClass.properties[idName].type
+
+      if idType is Number
+        num = Number(idValue)
+        idValue = num if !isNaN(num)
+
+      delete data._key
+      data[idName] = idValue;
+      callback err, idValue
+
 
   ###
     Save the model instance for the given data
@@ -370,56 +331,55 @@ class ArangoDBConnector extends Connector
     @param data [Object] The updated data to save or create
     @param callback [Function] The callback function, called with a (possible) error object and the number of affected objects
   ###
-  save: (model, data, callback) =>
-    debug 'save', model, data if @debug
-    @_updateOrCreate model, data, true, (err, result) ->
-      callback err if err
-      callback null, result.length
+  save: (model, data, options, callback) ->
+    debug "save for #{model} with data: #{JSON.stringify data}" if @debug
+    @updateOrCreate model, data, options, callback
+
 
   ###
     Update if the model instance exists with the same id or create a new instance
-    # TODO: change this to UPSERT AQL when 2.6 is out
 
     @param model [String] The model name
     @param data [Object] The model instance data
     @param callback [Function] The callback function, called with a (possible) error object and updated or created object
   ###
-  _updateOrCreate: (model, data, callback) =>
-    debug 'updateOrCreate', model, data if @debug
+  updateOrCreate: (model, data, options, callback) ->
+    debug "updateOrCreate for Model #{model} with data: #{JSON.stringify data}" if @debug
 
-    id = data.id
-    delete data.id
-
-    update_aql = qb.update('@id').with('@data').in('@@collection').returnNew('updated').toAQL()
-    create_aql = qb.insert('@data').in('@@collection').returnNew('inserted').toAQL()
-
-    # the trans-action ;)
-    action = (params) ->
-      db = require('internal').db
-      # try to update and return if we have an result
-      update_params = [ id: params.id, data: params.data, collection: params.collection ]
-      update_query = db._query(update_aql, update_params).toArray()
-      return update_result[0] if update_result.length > 0
-
-      # if update failed we try to create it
-      create_params = [ data: params.data, collection: params.collection ]
-      create_result = db._query(create_aql, create_params).toArray()
-
-      throw create_result if (create_result instanceof Error)
-
-      return create_result[0] if create_result.length > 0
-      return create_result
+    @getVersion (err, v) ->
+      version = new RegExp(/[2-9]+\.[6-9]+\.[0-9]+/).test(v.version)
+      if err or !version
+        err = ner Error('Error updateOrCreate not supported for version {#v}')
+        callback(err)
 
 
-    @transaction @getCollectionName(model), action, { id: id, data: data, collection: @getCollectionName(model) }, (err, result) ->
-      callback err if err
-      callback null, result
+    self = this
+    idValue = @getIdValue(model, data)
+    idName = @idName(model)
+    idValue = new String(idValue) if typeof idValue is 'number'
+    delete data[idName]
+    dataI = _.clone(data)
+    dataI._key = idValue
 
-  updateOrCreate: (model, data, callback) =>
-    @_updateOrCreate model, data, (err, result) ->
-      callback err if err
-      callback result[0] if result.length > 0
-      callback result
+    # RETURN statement at the moment is not supported
+    # See https://github.com/arangodb/aqbjs/issues/15 when issue is solved
+    #aql = qb.upsert({_key: '@id'}).insert('@dataI').update('@data').in('@@collection').return({doc: NEW, isNewInstance: OLD ? false : true })
+
+    aql = 'UPSERT {_key: @id} INSERT @dataI UPDATE @data IN @@collection RETURN {doc: UNSET(NEW, ["_id", "_rev"]), isNewInstance: OLD ? false : true }'
+    bindVars =
+      '@collection': @getCollectionName model
+      id: idValue
+      dataI: dataI
+      data: data
+
+    @execute aql, bindVars, (err, result) ->
+      if result and result._result[0]
+        newDoc = result._result[0].doc
+        isNewInstance = { isNewInstance: result._result[0].isNewInstance }
+        self.setIdValue(model, data, newDoc._key)
+        self.setIdValue(model, newDoc, newDoc._key)
+        if idName isnt '_key' then delete newDoc._key
+      callback err, newDoc, isNewInstance
 
 
   ###
@@ -429,12 +389,12 @@ class ArangoDBConnector extends Connector
     @param id [String] The id value
     @param callback [Function] The callback function, called with a (possible) error object and an boolean value if the specified object existed (true) or not (false)
   ###
-  exists: (model, id, callback) =>
-    debug 'create', model, data if @debug
+  exists: (model, id, callback) ->
+    debug "exists for #{model} with id: #{id}" if @debug
 
     @find model, id, (err, result) ->
-      callback err if err
-      callback null, (result.length > 0)
+      return callback err if err
+      callback null, result._result.length > 0
 
   ###
     Find a model instance by id
@@ -443,40 +403,46 @@ class ArangoDBConnector extends Connector
     @param id [String] id The id value
     @param callback [Function] The callback function, called with a (possible) error object and the found object
   ###
-  find: (model, id, callback) =>
-    debug 'find', model, id if @debug
+  find: (model, id, callback) ->
+    debug "find for #{model} with id: #{id}" if @debug
 
-    aql = qb.for('retDoc').in('@@collection').filter(qb.eq("retDoc._key", '@id')).limit(1).return('retDoc')
-    bindVars = {
-      '@collection': @getCollectionName(model),
+    aql = qb.for('doc').in('@@collection').filter(qb.eq('doc._key', '@id')).limit(1).return(qb.fn('UNSET') 'doc', ['"_id"','"_rev"'])
+
+    bindVars =
+      '@collection': @getCollectionName model
       id: id
-    }
 
-    @query aql, bindVars, (err, result) ->
-      callback err if err
-      callback null, result[0] if result.length > 0
-      callback null, result
+    @execute aql, bindVars, (err, result) ->
+      return callback err if err
+      return callback null, result._result[0] if result._result.length > 0
+      callback null, result._result
+
 
   ###
-    Delete a model instance by id
-
-    @param model [String] model The model name
-    @param id [String] id The id value
-    @param callback [Function] The callback function, called with a (possible) error object and the number of affected objects
+   Decide if id should be included
+   @param {Object} fields
+   @returns {Boolean}
+   @private
   ###
-  destroy: (model, id, callback) =>
-    debug 'delete', model, id if @debug
+  _idIncluded: (fields, idName) ->
+    if !fields then return true
 
-    aql = qb.for('removeDoc').in('@@collection').filter(qb.eq('removeDoc._key', '@id')).returnOld('removed')
-    bindVars = {
-      '@collection': @getCollectionName(model)
-      id: id
-    }
+    if Array.isArray(fields)
+      return fields.indexOf(idName) >= 0
 
-    @query aql, bindVars, (err, result) ->
-      callback err if err
-      callback null, result[0] if result.length > 0
-      callback null, result
+    if fields[idName]
+      # Included
+      return true
+
+    if idName in fields and !fields[idName]
+      # Excluded
+      return false
+
+    for f in fields
+      return !fields[f]; # If the fields has exclusion
+
+    return true
+
 
   # ========================
   # = Collection functions =
@@ -492,255 +458,111 @@ class ArangoDBConnector extends Connector
     @option return bindVars [Object] The variables, bound in the conditions
     @option return geoObject [Object] An query builder object containing possible parameters for a geo query
   ###
-  _filter2where: (model, filter, returnVariable) =>
-    debug "Evaluating where object #{JSON.stringify filter} for Model #{model}: " if @debug
+  _buildWhere: (model, where, index) ->
+    debug "Evaluating where object #{JSON.stringify where} for Model #{model}" if @debug
 
-    # variable to name the result
-    returnVariable = returnVariable or 'result'
-    #  the object holding the assignments of conditional values to temporary variables
-    boundVars = {}
-    # index for condition parameter binding
-    index = 0
-    #  helper function to fill boundVars with the upcoming temporary variables that the where sentence will generate
-    assignNewQueryVariable = (value) ->
-      partName = 'param_' + (index++)
-      boundVars[partName] = value
-      return '@'+partName
+    self = this
+
+    if !where? or typeof where isnt 'object'
+      return
 
     #  array holding the filter
     aqlArray = []
+    #  the object holding the assignments of conditional values to temporary variables
+    bindVars = {}
+
+    geoExpr = {}
+
+    # index for condition parameter binding
+    index = index or 0
+
+    #  helper function to fill bindVars with the upcoming temporary variables that the where sentence will generate
+    assignNewQueryVariable = (value) ->
+      partName = 'param_' + (index++)
+      bindVars[partName] = value
+      return '@'+partName
+
+    idName = @idName(model)
     ###
       the where object comes in two flavors
 
        - where[prop] = value: this is short for "prop" equals "value"
        - where[prop][op] = value: this is the long version and stands for "prop" "op" "value"
     ###
-    for condProp, condValue of filter.where
 
-      # correct if the conditionProperty falsely references to 'id'
-      condProp = '_key' if condProp is 'id'
+    for condProp, condValue of where
+      do() ->
+        # correct if the conditionProperty falsely references to 'id'
+        if condProp is idName
+          condProp = '_key'
+          if typeof condValue is 'number' then condValue = String(condValue)
 
-      #  special case: if conditionValue is a Object (instead of a string or number) we have a conditionOperator
-      if condValue and condValue.constructor.name is 'Object'
+        # special treatment for 'and', 'or' and 'nor' operator, since there value is an array of conditions
+        if condProp in ['and', 'or', 'nor']
+          # 'and', 'or' and 'nor' have multiple conditions so we run buildWhere recursively on their array to
+          if Array.isArray condValue
+            aql = qb
+            # condValue is an array of conditions so get the conditions from it via a recursive buildWhere call
+            for c, a of condValue
+              cond = self._buildWhere model, a, ++index
+              aql = aql[condProp] cond.aqlArray[0]
+              bindVars = merge true, bindVars, cond.bindVars
+            aqlArray.push aql
+            aql = null
+          return
+
+        #  special case: if condValue is a Object (instead of a string or number) we have a conditionOperator
+        if condValue and condValue.constructor.name is 'Object'
         #  condition operator is the only keys value, the new condition value is shifted one level deeper and can be a object with keys and values
-        condOp = Object.keys(condValue)[0]
-        condValue = condValue[condOp]
-      else
-        # condition operator is 'equals' or shortly 'eq'
-        # and condition value is stringified for the comparison
-        condOp = 'eq'
-        condValue = condValue.toString()
+          condOp = Object.keys(condValue)[0]
+          condValue = condValue[condOp]
 
-      # special treatment for "and" and "or" operator, since there value is an array of conditions
-      if condOp in ['and', 'or']
-        # 'and' and 'or' have multiple conditions so we run buildWhere recursively on their array to
-        if _.isArray condValue
-          # condValue is an array of conditions so get the conditions from it via a recursive buildWhere call
-          conditionalPart = @_filter2where model, condValue, returnVariable
+        if condOp
+          # If the value is not an array, fall back to regular fields
+          switch
+            # number comparison
+            when condOp in ['lte', 'lt', 'gte', 'gt', 'eq', 'neq']
+              aqlArray.push qb[condOp] "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
 
-          # add the condArray resp. the boundVars
-          aqlArray.push qb[condOp].apply null, conditionalPart.aqlArray
-          merge true, boundVars, conditionalPart.boundVars
+            # range comparison
+            when condOp is 'between'
+              aqlArray.push [qb.gte("#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue[0])}"),  qb.lte("#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue[1])}")]
 
-      # If the value is not an array, fall back to regular fields
-      switch
-        # number comparison
-        when condOp in ['lte', 'lt', 'gte', 'gt', 'eq', 'neq']
-          aqlArray.push qb[condOp] "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
+            # string comparison
+            when condOp is 'like'
+              aqlArray.push qb.not qb.LIKE "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
+            when condOp is 'nlike'
+              aqlArray.push qb.LIKE "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
 
-        # range comparison
-        when condOp is 'between'
-          aqlArray.push [qb.gte("#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue[0])}"),  qb.lte("#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue[1])}")]
+            # array comparison
+            when condOp is 'nin'
+              aqlArray.push qb.not qb.in "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
+            when condOp is 'inq'
+              #TODO fix for id and other type
+              condValue = (cond.toString() for cond in condValue)
+              aqlArray.push qb.in "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
 
-        # string comparison
-        when condOp is 'like'
-          aqlArray.push qb.not qb.LIKE "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
-        when condOp is 'nlike'
-          aqlArray.push qb.LIKE "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
+            # geo comparison (extra object)
+            when condOp is 'near'
+              # 'near' does not create a condition in the filter part, it returnes the lat/long pair
+              # the query will be done from the querying method itself
+              [lat, long] = condValue.split(',')
+              collection = @getCollectionName model
+              if where.limit?
+                geoExpr = qb.NEAR collection, lat, long, where.limit
+              else
+                geoExpr = qb.NEAR collection, lat, long
 
-        # array comparison
-        when condOp is 'nin'
-          aqlArray.push qb.not qb.in "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
-        when condOp is 'in'
-          aqlArray.push qb.in "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
-
-        # geo comparison (extra object)
-        when 'near'
-          # 'near' does not create a condition in the filter part, it returnes the lat/long pair
-          # the query will be done from the querying method itself
-          [lat, long] = condValue.split(',')
-          collection = @getCollectionName model
-          if filter.limit?
-            geoExpr = qb.NEAR collection, lat, long, filter.limit
-          else
-            geoExpr = qb.NEAR collection, lat, long
-
-        #  if we don't have a matching operator or no operator at all (condOp = false) then use the equivalence operator
+            #  if we don't have a matching operator or no operator at all (condOp = false) print warning
+            else
+              console.warn 'No matching operatorfor : ', condOp
         else
-          qb.eq "(#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
+          aqlArray.push qb.eq "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
 
-    console.log 'aqlArray ', aqlArray
     return {
       aqlArray: aqlArray
-      boundVars: boundVars
+      bindVars: bindVars
       geoExpr: geoExpr
-    }
-
-
-
-  ###
-  ###
-  _filter2fields: (model, filter, returnVariable) =>
-    # variable to name the result
-    returnVariable = returnVariable or 'result'
-    includes = []
-    excludes = []
-
-    if Array.isArray filter.fields
-      includes = filter.fields
-    else
-      _.each filter.fields, (field, key) -> if field then includes.push key else excludes.push key
-
-    # KEEP only the specified fields to include if includes not empty
-    return qb.fn('KEEP') returnVariable, includes if includes.length > 0
-
-    # remove/UNSET the
-    return qb.fn('UNSET') returnVariable, excludes if excludes.length > 0
-
-
-
-  ###
-  ###
-  _filter2order: (model, filter, returnVariable) =>
-    splitOrderClause = (order) ->
-      [prop, dir] = order.split ' '
-      dir = dir or 'ASC'
-      return [prop, dir]
-
-    if Array.isArray filter.order
-      return _.chain(filter.order).map(splitOrderClause).flatten().value()
-    else
-      return splitOrderClause(filter.order)
-
-  ###
-  ###
-  _filter2limit: (model, filter, returnVariable) =>
-    if filter.skip?
-      return qb.limit filter.skip, filter.limit
-    else
-      return qb.limit filter.limit
-
-  ###
-  ###
-  # _filter2include: (model, filter, returnVariable) =>
-  # TODO:
-  # if (filter && filter.include) [
-  #   self._models[model].model.include(objs, filter.include, callback);
-  # ] else [
-  #   callback(null, objs);
-  # ]
-
-
-  ###
-  ###
-  # TODO: create a function that can be called with the filter array only
-  _filter2parts: (model, filter, returnVariable) =>
-    # ================
-    # = filter.where =
-    # ================
-    # TODO: where part is FILTER part of query
-    # filter.where -> use buildWhere to create FILTER statement
-    if not filter.where? or typeof filter.where isnt 'object'
-      filterWhere = null
-    else
-      filterWhere = @_filter2where model, filter, returnVariable
-
-    # =================
-    # = filter.fields =
-    # =================
-    # TODO: fields part should be used in RETURN part of query
-    # filter.fields -> use AQL-KEEP or AQL-UNSET to reduce final returned object
-    if not filter.fields? or typeof filter.fields isnt 'object'
-      filterFields = null
-    else
-      filterFields = @_filter2fields model, filter, returnVariable
-
-    # ================
-    # = filter.order =
-    # ================
-    # TODO: order part should be used in ORDER part of query
-    # filter.order -> query-builder for sorting
-    if not filter.order? or typeof filter.order not in ['object', 'string']
-      filterOrder = null
-    else
-      filterOrder = @_filter2order model, filter, returnVariable
-
-    # ==============================
-    # = filter.limit & filter.skip =
-    # ==============================
-    # TODO: order part should be used in LIMIT part of query
-    # filter.limit & filter.skip -> query-builder for limit & skip
-    if not filter.limit?
-      filterLimit = null
-    else
-      filterLimit = @_filter2limit model, filter, returnVariable
-
-    # ==================
-    # = filter.include =
-    # ==================
-    # TODO:
-    # if (filter && filter.include) {
-    #   self._models[model].model.include(objs, filter.include, callback);
-    # } else {
-    #   callback(null, objs);
-    # }
-
-    return {
-      where: filterWhere
-      fields: filterFields
-      order: filterOrder
-      limit: filterLimit
-      # include: filterInclude
-    }
-
-  ###
-  ###
-  _filter2query: (model, filter) =>
-    debug '_filter2query', model, filter if @debug
-
-
-    collection = @getCollectionName model
-    collVariable = collection.charAt 0
-    returnVariable = 'result'
-
-    boundVars = {}
-
-    parts = @_filter2parts model, filter, returnVariable
-
-    # define returnVariable
-    aql = qb.for(returnVariable)
-    console.log 'aql_for ', aql
-    # 1) check where-part if we have a geo expression that we must include in the in-clause, if not use in-collection
-    coll = if parts.where.geoObject? then parts.where.geoObject else '@@collection'
-    aql = aql.in(coll)
-    console.log 'aql_in ', aql
-    # 2) use filter from where-part to filter, merge the boundVars from where into the global boundVars
-    merge true, boundVars, parts.where.boundVars
-    aql = aql.filter qb.and.apply null, parts.where.aqlArray
-
-    # 3) use order to sort result on item level
-    aql = aql.sort.apply null, parts.order if parts.order?
-
-    # 4) use limit to slice result on item level
-    aql = aql.limit.apply null, parts.limit if parts.limit?
-
-    # 5) use field to return fields-filterd result on attribute level or plain object
-    returnExpr = if parts.fields? then parts.fields else returnVariable
-    aql = aql.return returnExpr
-    console.log 'aql', aql
-    return {
-      aql: aql
-      boundVars: boundVars
     }
 
 
@@ -751,18 +573,97 @@ class ArangoDBConnector extends Connector
     @param [Object] filter The filter
     @param [Function] callback Callback with (possible) error object or list of objects
   ###
-  all: (model, filter, callback) =>
-    all_aql = @_filter2query model, filter
+  all: (model, filter, options, callback) ->
+    debug "all for #{model} with filter #{JSON.stringify filter}" if @debug
 
-    @query all_aql.aql, all_aql.boundVars, (err, result) ->
-      callback err if err
+    self = this
+    idName = @idName(model)
+
+    bindVars =
+      '@collection': @getCollectionName model
+
+    aql = qb.for(returnVariable).in('@@collection')
+
+    if filter.where
+      if filter.where[idName]
+        id = filter.where[idName];
+        delete filter.where[idName];
+        if typeof id is 'number' then id = String(id)
+        filter.where._key = id;
+
+      where = @_buildWhere(model, filter.where)
+      for w in where.aqlArray
+        aql = aql.filter(w)
+      merge true, bindVars, where.bindVars
+
+    if filter.order
+      if typeof filter.order is 'string' then filter.order = filter.order.split(',')
+      for order in filter.order
+        m = order.match(/\s+(A|DE)SC$/)
+        field = order.replace(/\s+(A|DE)SC$/, '').trim()
+        if field is idName
+          field = '_key'
+        if m and m[1] is 'DE'
+          aql = aql.sort(returnVariable + '.' + field, 'DESC')
+        else
+          aql = aql.sort(returnVariable + '.' + field, 'ASC')
+    else
+      aql = aql.sort(returnVariable + '._key')
+
+    if filter.limit
+      aql = aql.limit(filter.skip, filter.limit)
+
+    fields = _.clone(filter.fields)
+
+    if fields
+      indexId = fields.indexOf('id')
+      if indexId isnt -1
+        fields[indexId] = '_key'
+      fields = ( '"' + field + '"' for field in fields)
+      aql = aql.return(qb.fn('KEEP') returnVariable, fields)
+    else
+      aql = aql.return((qb.fn('UNSET') returnVariable, ['"_id"','"_rev"']))
+
+    @execute aql, bindVars, (err, result) ->
+      return callback err if err
+
+      cursorToArray = (r) ->
+        if self._idIncluded(filter.fields, idName)
+          self.setIdValue(model, r, r._key)
+        # Don't pass back _key if the fields is set
+        if idName isnt '_key' then delete r._key;
+
+        r = self.fromDatabase(model, r)
+
+      result = (cursorToArray r for r in result._result)
 
       # filter include
       if filter.include?
-        @getModelClass.model.include result, filter.include, callback
+        self._models[model].model.include result, filter.include, options, callback
       else
         callback null, result
 
+
+  ###
+  Delete a model instance by id
+
+  @param model [String] model The model name
+  @param id [String] id The id value
+  @param callback [Function] The callback function, called with a (possible) error object and the number of affected objects
+  ###
+  destroy: (model, id, callback) ->
+    debug "delete for #{model} with id #{id}" if @debug
+
+    aql = qb.for(returnVariable).in('@@collection').filter(qb.eq(returnVariable + '._key', '@id'))
+    .remove(returnVariable).in('@@collection').returnOld('removed')
+
+    bindVars =
+      '@collection': @getCollectionName model
+      id: id
+
+
+    @execute aql, bindVars, (err, result) ->
+      callback and callback err, result and result._result.length
 
 
   ###
@@ -772,32 +673,28 @@ class ArangoDBConnector extends Connector
     @param [Object] [where] The filter for where
     @param [Function] callback Callback with (possible) error object or the number of affected objects
   ###
-  destroyAll: (model, where, callback) =>
-    debug 'destroyAll', model, where if @debug
+  destroyAll: (model, where, callback) ->
+    debug "destroyAll for #{model} with where #{JSON.stringify where}" if @debug
 
-    collection = @getCollectionName(model)
-    collVariable = collection.charAt 0
+    collection = @getCollectionName model
 
-    bindVars = {
+    bindVars =
       '@collection': collection
-      model: collVariable
-    }
 
-    returnVariable = 'result'
-    # for .. in ..
-    aql = qb.for('@model').in('@@collection')
-    # filter ...
-    if where
-      whereFilter = @buildWhere model, where, returnVariable
-      aql = aql.filter qb.and.apply null, whereFilter.aqlArray
-      merge true, bindVars, whereFilter.bindVars
+    aql = qb.for(returnVariable).in('@@collection')
 
-    # remove ...
-    aql = aql.remove('@model').in('@@collection').returnOld(returnVariable)
+    if !_.isEmpty(where)
+      where = @_buildWhere model, where
+      for w in where.aqlArray
+        aql = aql.filter(w)
+      merge true, bindVars, where.bindVars
 
-    @query aql, bindVars, (err, result) ->
-      callback err if err
-      callback null, result.length
+    aql = aql.remove(returnVariable).in('@@collection').returnOld('removed')
+
+    @execute aql, bindVars, (err, result) ->
+      return callback err if err
+      callback null, result._result.length
+
 
   ###
     Count the number of instances for the given model
@@ -806,30 +703,28 @@ class ArangoDBConnector extends Connector
     @param [Function] callback Callback with (possible) error object or the number of affected objects
     @param [Object] where The filter for where
   ###
-  count: (model, callback, where) =>
-    debug 'count', model, where if @debug
+  count: (model, where, options, callback) ->
+    debug "count for #{model} with where #{JSON.stringify where}" if @debug
 
-    collection = @getCollectionName(model)
-    collVariable = collection.charAt 0
+    collection = @getCollectionName model
 
-    bindVars = {
-      collection: collection
-      model: collVariable
-    }
+    bindVars =
+      '@collection': collection
 
-    # for .. in ..
-    aql = qb.for('@model').in('@@collection')
-    # filter ...
-    if where
-      whereFilter = @buildWhere model, where, modelVariable
-      aql = aql.filter qb.and.apply null, whereFilter.aqlArray
-      merge true, bindVars, whereFilter.bindVars
 
-    aql = aql.return '@model'
+    aql = qb.for(returnVariable).in('@@collection')
 
-    @query aql, bindVars, (err, result) ->
-      callback err if err
-      callback null, result.length
+    if !_.isEmpty(where)
+      where = @_buildWhere model, where
+      for w in where.aqlArray
+        aql = aql.filter(w)
+      merge true, bindVars, where.bindVars
+
+    aql = aql.return(qb.fn('UNSET') returnVariable, ['"_id"','"_rev"'])
+
+    @execute aql, bindVars, (err, result) ->
+      return callback err if err
+      callback null, result._result.length
 
 
   ###
@@ -840,23 +735,32 @@ class ArangoDBConnector extends Connector
     @param [Object] data The model data
     @param [Function] callback Callback with (possible) error object or the updated object
   ###
-  updateAttributes: (model, id, data, cb) =>
-    debug 'updateAttributes', model, id, data if @debug
+  updateAttributes: (model, id, data, callback) ->
+    debug "updateAttributes for #{model} with id #{id} and data #{JSON.stringify data}" if @debug
 
-    collection = @getCollectionName(model)
-    collVariable = collection.charAt 0
+    self = this
 
-    bindVars = {
-      collection: collection
+    if id is Number then id = String(id)
+    idName = @idName(model)
+
+    bindVars =
+      '@collection': @getCollectionName model
       id: id
-    }
+      data: data
 
-    # for .. in ..
-    aql = qb.for('updateDoc').in('@@collection').filter('updateDoc._key','@id').update('updateDoc').with(data).in('@@collection').returnNew('result')
+    #TODO: aqb not support _.return((qb.fn(UNSET) NEW, ['"_id"', '"_rev"']))
+    aql = qb.for(returnVariable).in('@@collection').filter(qb.eq(returnVariable + '._key', '@id')).update(returnVariable)
+    .with('@data').in('@@collection').returnNew('updated')
 
-    @query aql, bindVars, (err, result) ->
-      callback err if err
-      callback null, result
+    @execute aql, bindVars, (err, result) ->
+      if result and result._result[0]
+        result = result._result[0]
+        delete result['_id']
+        delete result['_rev']
+        self.setIdValue(model, result, id);
+        if idName isnt '_key' then delete result._key;
+      callback and callback err, result
+
 
   ###
     Update all matching instances
@@ -866,156 +770,166 @@ class ArangoDBConnector extends Connector
     @param [Object] data The property/value pairs to be updated
     @param [Function] callback Callback with (possible) error object or the number of affected objects
   ###
-  update: (model, where, data, cb) =>
-    return @updateAll model, where, data, cb
+  update: (model, where, data, callback) ->
+    @updateAll model, where, data, callback
 
-  updateAll: (model, where, data, cb) =>
-    debug 'updateAll', model, where, data if @debug
+  updateAll: (model, where, data, callback) ->
+    debug "updateAll for #{model} with where #{JSON.stringify where} and data #{JSON.stringify data}" if @debug
 
-    # TODO: FOR & FILTER (from id) & UPDATE (with data)
-    collection = @getCollectionName(model)
-    collVariable = collection.charAt 0
+    collection = @getCollectionName model
 
-    bindVars = {
-      collection: collection
-      model: collVariable
-    }
+    bindVars =
+      '@collection': collection
+      data: data
 
-    # for .. in ..
-    aql = qb.for('@model').in('@@collection')
-    # filter ...
+    aql = qb.for(returnVariable).in('@@collection')
+
     if where
-      whereFilter = @buildWhere model, where, modelVariable
-      aql = aql.filter qb.and.apply null, whereFilter.aqlArray
-      merge true, bindVars, whereFilter.bindVars
+      where = @_buildWhere(model, where)
+      for w in where.aqlArray
+        aql = aql.filter(w)
+      merge true, bindVars, where.bindVars
 
-    aql = aql.update(modelVariable).with(data).in('@@collection')
+    aql = aql.update(returnVariable).with('@data').in('@@collection')
 
-    @query aql, bindVars, (err, result) ->
-      callback err if err
-      callback null, result.length
+    idName = @idName(model)
+    delete data[idName]
+
+    @execute aql, bindVars, (err, result) ->
+      return callback err if err
+      callback null, {count: result.extra.stats.writesExecuted}
 
   # @extend require('./MigrationMixin')
   # ===================
   # = Migration Mixin =
   # ===================
-      ###
-        Perform autoupdate for the given models. It basically calls ensureIndex
+  ###
+    Perform autoupdate for the given models. It basically calls ensureIndex
 
-        @param [String[]] [models] A model name or an array of model names. If not present, apply to all models
-        @param [Function] [cb] The callback function
-      ###
-      autoupdate: (models, cb) =>
-        if @db
-          debug 'autoupdate' if @debug
+    @param [String[]] [models] A model name or an array of model names. If not present, apply to all models
+    @param [Function] [cb] The callback function
+  ###
+  autoupdate: (models, cb) ->
 
-          if (not cb) and (typeof models is 'function')
-            cb = models
-            models = undefined
+    self = this
 
-          # First argument is a model name
-          models = [models] if typeof models is 'string'
+    if @db
+      debug 'autoupdate for model %s', models if @debug
 
-          models = models or Object.keys @_models
+      if (not cb) and (typeof models is 'function')
+        cb = models
+        models = undefined
 
-          async.each( models, ((model, modelCallback) ->
-            indexes = @_models[model].settings.indexes or []
-            indexList = []
+      # First argument is a model name
+      models = [models] if typeof models is 'string'
+
+      models = models or Object.keys @_models
+
+      async.each( models, ((model, modelCallback) ->
+        indexes = self._models[model].settings.indexes or []
+        indexList = []
+        index = {}
+        options = {}
+
+        if typeof indexes is 'object'
+          for indexName, index of indexes
+            if index.keys
+              # the index object has keys
+              options = index.options or {}
+              options.name = options.name or indexName
+              index.options = options
+            else
+              options =
+                name: indexName
+              index =
+                keys: index
+                options: options
+
+            indexList.push index
+        else if Array.isArray indexes
+          indexList = indexList.concat indexes
+
+        for propIdx, property of @_models[model].properties
+          if property.index
             index = {}
-            options = {}
+            index[propIdx] = 1
 
-            if typeof indexes is 'object'
-              for indexName, index of indexes
-                if index.keys
-                  # the index object has keys
-                  options = index.options or {}
-                  options.name = options.name or indexName
-                  index.options = options
-                else
-                  options = { name: indexName }
-                  index = {
-                    keys: index
-                    options: options
-                  }
+            if typeof property.index is 'object'
+              # If there is a arangodb key for the index, use it
+              if typeof property.index.arangodb is 'object'
+                options = property.index.arangodb
+                index[propIdx] = options.kind or 1
+                # Backwards compatibility for former type of indexes
+                options.unique = true if property.index.uniqe is true
+              else
+                # If there isn't an  properties[p].index.mongodb object, we read the properties from  properties[p].index
+                options = property.index
 
-                indexList.push index
-            else if Array.isArray indexes
-              indexList = indexList.concat indexes
+              options.background = true if options.background is undefined
 
-            for propIdx, property of @_models[model].properties
-              if property.index
-                index = {}
-                index[propIdx] = 1
+            # If properties[p].index isn't an object we hardcode the background option and check for properties[p].unique
+            else
+              options =
+                background: true
+              options.unique = true if property.unique
 
-                if typeof property.index is 'object'
-                  # If there is a arangodb key for the index, use it
-                  if typeof property.index.arangodb is 'object'
-                    options = property.index.arangodb
-                    index[propIdx] = options.kind or 1
-                    # Backwards compatibility for former type of indexes
-                    options.unique = true if property.index.uniqe is true
-                  else
-                    # If there isn't an  properties[p].index.mongodb object, we read the properties from  properties[p].index
-                    options = property.index
+            indexList.push { keys: index, options: options }
 
-                  options.background = true if options.background is undefined
+        debug 'create indexes' if @debug
 
-                # If properties[p].index isn't an object we hardcode the background option and check for properties[p].unique
-                else
-                  options = { background: true }
-                  options.unique = true if property.unique
-
-
-                indexList.push { keys: index, options: options }
-
-            debug 'create indexes' if @debug
-            async.each( indexList, ((index, indexCallback) ->
-              debug 'ensureIndex' if @debug
-
-              # TODO: ensureIndex for ArangoDB
-              # self.collection(model).ensureIndex(index.fields || index.keys, index.options, indexCallback);
-            ), modelCallback )
-          ), cb)
-        else
-          @dataSource.once 'connected', () -> @autoupdate models, cb
+        async.each( indexList, ((index, indexCallback) ->
+          debug 'createIndex: %s', index if @debug
+          self.collection(model).createIndex(index.fields || index.keys, index.options, indexCallback);
+        ), modelCallback )
+      ), cb)
+    else
+      @dataSource.once 'connected', () -> @autoupdate models, cb
 
 
 
-      ###
-        Perform automigrate for the given models. It drops the corresponding collections and calls ensureIndex
+  ###
+    Perform automigrate for the given models. It drops the corresponding collections and calls ensureIndex
 
-        @param [String[]] [models] A model name or an array of model names. If not present, apply to all models
-        @param [Function] [cb] The callback function
-      ###
-      automigrate: (models, cb) =>
-        if @db
-          debug 'automigrate' if @debug
+    @param [String[]] [models] A model name or an array of model names. If not present, apply to all models
+    @param [Function] [cb] The callback function
+  ###
+  automigrate: (models, cb) ->
+    self = this
 
-          if (not cb) and (typeof models is 'function')
-            cb = models
-            models = undefined
+    if @db
+      debug "automigrate for model #{models}" if @debug
 
-          # First argument is a model name
-          models = [models] if typeof models is 'string'
+      if (not cb) and (typeof models is 'function')
+        cb = models
+        models = undefined
 
-          async.each(models, ((model, modelCallback) ->
-            debug "drop collection: #{model}"
-            @db.dropCollection model, (err, collection) ->
-              if err
-                #  For errors other than 'ns not found' (collection doesn't exist)
-                return modelcallback err if not (err.name is 'MongoError' and err.ok is 0 and err.errmsg is 'ns not found')
+      # First argument is a model name
+      models = [models] if typeof models is 'string'
 
-              # Recreate the collection
-              debug "create collection: #{model}"
+      models = models || Object.keys @_models
 
-              @db.createCollection model, modelcallback
+      async.eachSeries(models, ((model, modelCallback) ->
+        collectionName = self.getCollectionName model
+        debug 'drop collection %s for model %s', collectionName, model
 
-          ), ((err) ->
-            return cb and cb err if err
-            @autoupdate models, cb
-          ))
-        else
-          @dataSource.once 'connected', () -> @automigrate models cb
+        self.db.dropCollection model, (err, collection) ->
+          if err
+            if err.response.body?
+              err = err.response.body
+              #  For errors other than 'ns not found' (collection doesn't exist)
+              return modelCallback err if not (err.error is true and err.errorNum is 1203 and err.errorMessage is 'unknown collection \'' + model + '\'')
+
+          # Recreate the collection
+          debug 'create collection %s for model %s', collectionName, model
+
+          self.db.createCollection model, modelCallback
+
+      ), ((err) ->
+        return cb and cb err
+        self.autoupdate models, cb
+      ))
+    else
+      @dataSource.once 'connected', () -> @automigrate models cb
 
 
 exports.ArangoDBConnector = ArangoDBConnector
