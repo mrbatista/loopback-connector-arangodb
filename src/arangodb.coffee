@@ -13,8 +13,6 @@ debug = require('debug') 'loopback:connector:arango'
 ajs = require 'arangojs'
 qb = require 'aqb'
 
-returnVariable = 'result'
-
 
 generateConnObject = (settings) ->
   if settings.url
@@ -124,6 +122,8 @@ class ArangoDBConnector extends Connector
 
     @api = @db.route '_api'
 
+    @returnVariable = 'result'
+
 
   # one file per functionality
   # @extend require('./CoreMixin')
@@ -137,7 +137,7 @@ class ArangoDBConnector extends Connector
   ###
   connect: (callback) ->
 
-    debug "ArangoDB connection is called with settings: #{JSON.stringify @settings}" if @debug
+    debug 'ArangoDB connection is called with settings: #{JSON.stringify @settings}' if @debug
 
     process.nextTick () ->
       callback && callback null, @db
@@ -349,8 +349,8 @@ class ArangoDBConnector extends Connector
     @getVersion (err, v) ->
       version = new RegExp(/[2-9]+\.[6-9]+\.[0-9]+/).test(v.version)
       if err or !version
-        err = ner Error('Error updateOrCreate not supported for version {#v}')
-        callback(err)
+        err = new Error "Error updateOrCreate not supported for version {#v}"
+        callback err
 
 
     self = this
@@ -406,7 +406,7 @@ class ArangoDBConnector extends Connector
   find: (model, id, callback) ->
     debug "find for #{model} with id: #{id}" if @debug
 
-    aql = qb.for('doc').in('@@collection').filter(qb.eq('doc._key', '@id')).limit(1).return(qb.fn('UNSET') 'doc', ['"_id"','"_rev"'])
+    aql = qb.for(@returnVariable).in('@@collection').filter(qb.eq( @returnVariable + '._key', '@id')).limit(1).return(qb.fn('UNSET') @returnVariable, ['"_id"','"_rev"'])
 
     bindVars =
       '@collection': @getCollectionName model
@@ -495,7 +495,7 @@ class ArangoDBConnector extends Connector
         # correct if the conditionProperty falsely references to 'id'
         if condProp is idName
           condProp = '_key'
-          if typeof condValue is 'number' then condValue = String(condValue)
+          if typeof condValue is 'number' then condValue = new String(condValue)
 
         # special treatment for 'and', 'or' and 'nor' operator, since there value is an array of conditions
         if condProp in ['and', 'or', 'nor']
@@ -522,25 +522,25 @@ class ArangoDBConnector extends Connector
           switch
             # number comparison
             when condOp in ['lte', 'lt', 'gte', 'gt', 'eq', 'neq']
-              aqlArray.push qb[condOp] "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
+              aqlArray.push qb[condOp] "#{self.returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
 
             # range comparison
             when condOp is 'between'
-              aqlArray.push [qb.gte("#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue[0])}"),  qb.lte("#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue[1])}")]
+              aqlArray.push [qb.gte("#{self.returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue[0])}"),  qb.lte("#{self.returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue[1])}")]
 
             # string comparison
             when condOp is 'like'
-              aqlArray.push qb.not qb.LIKE "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
+              aqlArray.push qb.not qb.LIKE "#{self.returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
             when condOp is 'nlike'
-              aqlArray.push qb.LIKE "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
+              aqlArray.push qb.LIKE "#{self.returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
 
             # array comparison
             when condOp is 'nin'
-              aqlArray.push qb.not qb.in "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
+              aqlArray.push qb.not qb.in "#{self.returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
             when condOp is 'inq'
               #TODO fix for id and other type
               condValue = (cond.toString() for cond in condValue)
-              aqlArray.push qb.in "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
+              aqlArray.push qb.in "#{self.returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
 
             # geo comparison (extra object)
             when condOp is 'near'
@@ -557,7 +557,7 @@ class ArangoDBConnector extends Connector
             else
               console.warn 'No matching operatorfor : ', condOp
         else
-          aqlArray.push qb.eq "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
+          aqlArray.push qb.eq "#{self.returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
 
     return {
       aqlArray: aqlArray
@@ -582,7 +582,7 @@ class ArangoDBConnector extends Connector
     bindVars =
       '@collection': @getCollectionName model
 
-    aql = qb.for(returnVariable).in('@@collection')
+    aql = qb.for(@returnVariable).in('@@collection')
 
     if filter.where
       if filter.where[idName]
@@ -604,11 +604,11 @@ class ArangoDBConnector extends Connector
         if field is idName
           field = '_key'
         if m and m[1] is 'DE'
-          aql = aql.sort(returnVariable + '.' + field, 'DESC')
+          aql = aql.sort(@returnVariable + '.' + field, 'DESC')
         else
-          aql = aql.sort(returnVariable + '.' + field, 'ASC')
+          aql = aql.sort(@returnVariable + '.' + field, 'ASC')
     else
-      aql = aql.sort(returnVariable + '._key')
+      aql = aql.sort(@returnVariable + '._key')
 
     if filter.limit
       aql = aql.limit(filter.skip, filter.limit)
@@ -620,9 +620,9 @@ class ArangoDBConnector extends Connector
       if indexId isnt -1
         fields[indexId] = '_key'
       fields = ( '"' + field + '"' for field in fields)
-      aql = aql.return(qb.fn('KEEP') returnVariable, fields)
+      aql = aql.return(qb.fn('KEEP') @returnVariable, fields)
     else
-      aql = aql.return((qb.fn('UNSET') returnVariable, ['"_id"','"_rev"']))
+      aql = aql.return((qb.fn('UNSET') @returnVariable, ['"_id"','"_rev"']))
 
     @execute aql, bindVars, (err, result) ->
       return callback err if err
@@ -654,8 +654,8 @@ class ArangoDBConnector extends Connector
   destroy: (model, id, callback) ->
     debug "delete for #{model} with id #{id}" if @debug
 
-    aql = qb.for(returnVariable).in('@@collection').filter(qb.eq(returnVariable + '._key', '@id'))
-    .remove(returnVariable).in('@@collection').returnOld('removed')
+    aql = qb.for(@returnVariable).in('@@collection').filter(qb.eq(@returnVariable + '._key', '@id'))
+    .remove(@returnVariable).in('@@collection').returnOld('removed')
 
     bindVars =
       '@collection': @getCollectionName model
@@ -681,7 +681,7 @@ class ArangoDBConnector extends Connector
     bindVars =
       '@collection': collection
 
-    aql = qb.for(returnVariable).in('@@collection')
+    aql = qb.for(@returnVariable).in('@@collection')
 
     if !_.isEmpty(where)
       where = @_buildWhere model, where
@@ -689,7 +689,7 @@ class ArangoDBConnector extends Connector
         aql = aql.filter(w)
       merge true, bindVars, where.bindVars
 
-    aql = aql.remove(returnVariable).in('@@collection').returnOld('removed')
+    aql = aql.remove(@returnVariable).in('@@collection').returnOld('removed')
 
     @execute aql, bindVars, (err, result) ->
       return callback err if err
@@ -712,7 +712,7 @@ class ArangoDBConnector extends Connector
       '@collection': collection
 
 
-    aql = qb.for(returnVariable).in('@@collection')
+    aql = qb.for(@returnVariable).in('@@collection')
 
     if !_.isEmpty(where)
       where = @_buildWhere model, where
@@ -720,7 +720,7 @@ class ArangoDBConnector extends Connector
         aql = aql.filter(w)
       merge true, bindVars, where.bindVars
 
-    aql = aql.return(qb.fn('UNSET') returnVariable, ['"_id"','"_rev"'])
+    aql = aql.return(qb.fn('UNSET') @returnVariable, ['"_id"','"_rev"'])
 
     @execute aql, bindVars, (err, result) ->
       return callback err if err
@@ -740,7 +740,7 @@ class ArangoDBConnector extends Connector
 
     self = this
 
-    if id is Number then id = String(id)
+    if id is Number then id = new String(id)
     idName = @idName(model)
 
     bindVars =
@@ -749,7 +749,7 @@ class ArangoDBConnector extends Connector
       data: data
 
     #TODO: aqb not support _.return((qb.fn(UNSET) NEW, ['"_id"', '"_rev"']))
-    aql = qb.for(returnVariable).in('@@collection').filter(qb.eq(returnVariable + '._key', '@id')).update(returnVariable)
+    aql = qb.for(@returnVariable).in('@@collection').filter(qb.eq(@returnVariable + '._key', '@id')).update(@returnVariable)
     .with('@data').in('@@collection').returnNew('updated')
 
     @execute aql, bindVars, (err, result) ->
@@ -782,7 +782,7 @@ class ArangoDBConnector extends Connector
       '@collection': collection
       data: data
 
-    aql = qb.for(returnVariable).in('@@collection')
+    aql = qb.for(@returnVariable).in('@@collection')
 
     if where
       where = @_buildWhere(model, where)
@@ -790,7 +790,7 @@ class ArangoDBConnector extends Connector
         aql = aql.filter(w)
       merge true, bindVars, where.bindVars
 
-    aql = aql.update(returnVariable).with('@data').in('@@collection')
+    aql = aql.update(@returnVariable).with('@data').in('@@collection')
 
     idName = @idName(model)
     delete data[idName]

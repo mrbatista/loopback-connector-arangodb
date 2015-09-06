@@ -90,7 +90,6 @@ describe 'arangodb connector:', () ->
     User.hasMany(Post);
     Post.belongsTo(User);
 
-    db.automigrate()
 
   beforeEach (done) ->
     User.settings.arangodb = {};
