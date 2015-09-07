@@ -55,73 +55,74 @@ describe 'arangodb core functionality:', () ->
         location:
           type: GeoPoint
       }, {
-        options:
-          arangodb:
-            collection: 'Complex'
+        arangodb:
+          collection: 'Complex'
       }
 
     describe 'connection generator:', () ->
       it 'should create the default connection object when called with an empty settings object', (done) ->
         settings = {}
-        expectedConnObj = {
+        expectedConnObj =
           url: 'http://127.0.0.1:8529'
           databaseName: 'loopback_db'
           promise: false
-        }
+
 
         connObj = arangodb.generateConnObject settings
         connObj.should.eql expectedConnObj
         done()
 
       it 'should create an connection using only the "url" property, ignoring other connection settings', (done) ->
-        settings = {
+        settings =
           url: 'http://rightUser:rightPassword@right_host:32768/rightDatabase'
           hostname: 'http://localhost'
           port: 1234
           dataBase: 'NotExistent'
           username: 'wrongUser'
           password: 'wrongPassword'
-        }
-        expectedConnObj = {
+
+        expectedConnObj =
           url: 'http://rightUser:rightPassword@right_host:32768'
           databaseName: 'rightDatabase'
           promise: false
-        }
+
 
         connObj = arangodb.generateConnObject settings
         connObj.should.eql expectedConnObj
         done()
 
       it 'should create an connection using only the "url" property, considers other non-connection settings', (done) ->
-        settings = {
+        settings =
           url: 'http://rightUser:rightPassword@right_host:32768/rightDatabase'
           promise: true
-        }
-        expectedConnObj = {
+
+        expectedConnObj =
           url: 'http://rightUser:rightPassword@right_host:32768'
           databaseName: 'rightDatabase'
           promise: true
-        }
+
 
         connObj = arangodb.generateConnObject settings
         connObj.should.eql expectedConnObj
         done()
 
       it 'should create an connection using the connection settings when url is not set', (done) ->
-        # TODO: create the test settings from reading in .loopbackrc and modify it
-        settings = {
+
+        settings = require('rc')('loopback').test.arangodb
+
+        settings =
           host: 'right_host'
           port: 32768
           database: 'rightDatabase'
           username: 'rightUser'
           password: 'rightPassword'
           promise: true
-        }
-        expectedConnObj = {
+
+        expectedConnObj =
           url: 'http://rightUser:rightPassword@right_host:32768'
           databaseName: 'rightDatabase'
           promise: true
-        }
+
 
         connObj = arangodb.generateConnObject settings
         connObj.should.eql expectedConnObj
@@ -185,46 +186,6 @@ describe 'arangodb core functionality:', () ->
       defaultIdType.should.be.a.class
       done()
 
-  describe 'conversion', () ->
-    it "should convert Loopback Data Types to the respective ArangoDB Data Types", (done) ->
-      firstName = chance.first()
-      lastName = chance.last()
-      birthdate = chance.birthday({american: false})
-      money = chance.integer {min: 100, max: 1000}
-      lat = chance.latitude()
-      lng = chance.longitude()
-
-      toDB = {
-        name:
-          first: firstName
-          last: lastName
-        profession: 'Node Developer'
-        money: money
-        birthday: birthdate
-        icon: new Buffer('a20')
-        active: true
-        likes: ['nodejs', 'loopback']
-        location: new GeoPoint {lat: lat, lng: lng}
-      }
-
-      dbData = ds.connector.toDatabase 'ComplexModel', toDB
-      expected = {
-        name:
-          first: firstName
-          last: lastName
-        profession: 'Node Developer'
-        money: money
-        birthday: birthdate
-        icon: new Buffer('a20').toString('base64')
-        active: true
-        likes: ['nodejs', 'loopback']
-        location:
-          lat: lat
-          lng: lng
-      }
-      dbData.should.eql expected
-      done()
-
 
     it "should convert ArangoDB Types to the respective Loopback Data Types", (done) ->
       firstName = chance.first()
@@ -234,22 +195,22 @@ describe 'arangodb core functionality:', () ->
       lat = chance.latitude()
       lng = chance.longitude()
 
-      fromDB = {
+      fromDB =
         name:
           first: firstName
           last: lastName
         profession: 'Node Developer'
         money: money
         birthday: birthdate
-        icon: new Buffer('a20').toString('base64')
+        icon: new Buffer('a20').toJSON()
         active: true
         likes: ['nodejs', 'loopback']
         location:
           lat: lat
           lng: lng
-      }
+
       jsonData = ds.connector.fromDatabase 'ComplexModel', fromDB
-      expected = {
+      expected =
         name:
           first: firstName
           last: lastName
@@ -260,7 +221,7 @@ describe 'arangodb core functionality:', () ->
         active: true
         likes: ['nodejs', 'loopback']
         location: new GeoPoint {lat: lat, lng: lng}
-      }
+
 
       jsonData.should.eql expected
       done()
@@ -359,15 +320,3 @@ describe 'arangodb core functionality:', () ->
           values.should.eql [{year: 2010, following: 2011}, {year: 2011, following: 2012},
             {year: 2012, following: 2013}, {year: 2013, following: 2014}]
           done()
-
-    # TODO: find a way to test transactions
-    # describe 'transaction', () ->
-    #   it "should execute a transaction with the action provided as a string", (done) ->
-    #     done false
-    #
-    #   it "should execute a transaction with the action provided as a function", (done) ->
-    #     done false
-    #
-    #   it "should execute a transaction with the action provided as a function, including parameters", (done) ->
-    #     done false
-

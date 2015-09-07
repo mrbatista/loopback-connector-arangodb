@@ -1,6 +1,8 @@
 # This test written in mocha+should.js
 should = require('./init');
 
+GeoPoint = require('loopback-datasource-juggler').GeoPoint
+
 describe 'arangodb migration functionality', () ->
 
   before () ->
@@ -102,10 +104,10 @@ describe 'arangodb migration functionality', () ->
 
   describe 'inline defined indexes', () ->
     describe 'hash index', () ->
-      it 'should define a hash index when defined as boolean "index":true', (done) ->
-        done false
+      it 'should define a hash index when defined as boolean "index":true'
 
       it 'should define a hash index when defined as object with key "hash": true'
+
 
     describe 'skiplist index', () ->
     describe 'fulltext index', () ->
@@ -120,43 +122,37 @@ describe 'arangodb migration functionality', () ->
 
   describe 'hash indexes:', () ->
     describe 'defined explicit:', () ->
-      it 'should define a hash index from model settings', (done) ->
+      it 'should define a hash index from model settings'
 
-        done false
-
-      it 'should define a sparsed hash index from model settings', (done) ->
-        done false
+      it 'should define a sparsed hash index from model settings'
 
     describe 'defined inline:', () ->
-      it 'should define a hash index from property settings', (done) ->
-        done false
+      it 'should define a hash index from property settings'
 
-      it 'should define a sparsed hash index from property settings', (done) ->
-        done false
+      it 'should define a sparsed hash index from property settings'
+
 
   describe 'skiplist indexes:', () ->
     describe 'defined inline:', () ->
-      it 'should define a skiplist index from model settings', (done) ->
-        done false
+      it 'should define a skiplist index from model settings'
 
-      it 'should define a sparsed skiplist index from model settings', (done) ->
-        done false
+      it 'should define a sparsed skiplist index from model settings'
+
 
     describe 'defined explicit:', () ->
-      it 'should define a skiplist indexes from property settings', (done) ->
-        done false
+      it 'should define a skiplist indexes from property settings'
 
-      it 'should define a sparsed skiplist indexes from property settings', (done) ->
-        done false
+      it 'should define a sparsed skiplist indexes from property settings'
+
 
 
   describe 'fulltext indexes:', () ->
     describe 'defined inline:', () ->
-      it 'should define a fulltext index from model settings', (done) ->
-        done false
+      it 'should define a fulltext index from model settings'
 
-      it 'should define a fulltext index from model settings', (done) ->
-        done false
+
+      it 'should define a fulltext index from model settings'
+
 
     describe 'defined explicit:', () ->
 
