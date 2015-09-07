@@ -309,16 +309,6 @@ describe 'arangodb connector:', () ->
 
         done()
 
-  #TODO: fix problem with findOne
-#  it 'should allow custom collection name', (done) ->
-#
-#    Post.create {title: 'Post1', content: 'Post content'}, (err, post) ->
-#      Post.dataSource.connector.db.collection('PostCollection').findOne {id: post.id}, (err, p) ->
-#        should.not.exist(err)
-#        should.exist(p)
-#
-#        done()
-
   it 'should allow to find by id using where', (done) ->
 
     Post.create {title: 'Post1', content: 'Post1 content'}, (err, p1) ->
@@ -345,29 +335,29 @@ describe 'arangodb connector:', () ->
 
           done()
 
-#  it 'should invoke hooks', (done) ->
-#
-#    events = []
-#    connector = Post.getDataSource().connector
-#    connector.observe 'before execute', (ctx, next) ->
-#      ctx.req.aql.should.be.string;
-#      ctx.req.params.should.be.Object;
-#      events.push 'before execute'
-#      next()
-#
-#    connector.observe 'after execute', (ctx, next) ->
-#      ctx.res.should.be.Object
-#      events.push 'after execute'
-#      next()
-#
-#    Post.create {title: 'Post1', content: 'Post1 content'}, (err, p1) ->
-#      Post.find (err, results) ->
-#        events.should.eql(['before execute', 'after execute',
-#          'before execute', 'after execute'])
-#        connector.clearObservers 'before execute'
-#        connector.clearObservers 'after execute'
-#
-#        done(err, results)
+  it 'should invoke hooks', (done) ->
+
+    events = []
+    connector = Post.getDataSource().connector
+    connector.observe 'before execute', (ctx, next) ->
+      ctx.req.aql.should.be.string;
+      ctx.req.params.should.be.Object;
+      events.push 'before execute'
+      next()
+
+    connector.observe 'after execute', (ctx, next) ->
+      ctx.res.should.be.Object
+      events.push 'after execute'
+      next()
+
+    Post.create {title: 'Post1', content: 'Post1 content'}, (err, p1) ->
+      Post.find (err, results) ->
+        events.should.eql(['before execute', 'after execute',
+          'before execute', 'after execute'])
+        connector.clearObservers 'before execute'
+        connector.clearObservers 'after execute'
+
+        done(err, results)
 
 
   it 'should allow to find by number id using where', (done) ->
@@ -648,68 +638,68 @@ describe 'arangodb connector:', () ->
 
         done()
 
-#  it 'should allow to find using like', (done) ->
-#
-#    Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
-#      Post.find {where: {title: {like: 'M.+st'}}}, (err, posts) ->
-#        should.not.exist(err)
-#        posts.should.have.property('length', 1)
-#
-#        done()
-#
-#  it 'should allow to find using case insensitive like', (done) ->
-#
-#    Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
-#      Post.find {where: {title: {like: 'm.+st', options: 'i'}}}, (err, posts) ->
-#        should.not.exist(err)
-#        posts.should.have.property('length', 1)
-#
-#        done()
-#
-#  it 'should allow to find using case insensitive like', (done) ->
-#
-#    Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
-#      Post.find {where: {content: {like: 'HELLO', options: 'i'}}}, (err, posts) ->
-#        should.not.exist(err)
-#        posts.should.have.property('length', 1)
-#
-#        done()
-#
-#  it 'should support like for no match', (done) ->
-#
-#    Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
-#      Post.find {where: {title: {like: 'M.+XY'}}}, (err, posts) ->
-#        should.not.exist(err)
-#        posts.should.have.property('length', 0)
-#
-#        done()
-#
-#  it 'should allow to find using nlike', (done) ->
-#
-#    Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
-#      Post.find {where: {title: {nlike: 'M.+st'}}}, (err, posts) ->
-#        should.not.exist(err)
-#        posts.should.have.property('length', 0)
-#
-#        done()
-#
-#  it 'should allow to find using case insensitive nlike', (done) ->
-#
-#    Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
-#      Post.find {where: {title: {nlike: 'm.+st', options: 'i'}}}, (err, posts) ->
-#        should.not.exist(err)
-#        posts.should.have.property('length', 0)
-#
-#        done()
-#
-#  it 'should support nlike for no match', (done) ->
-#
-#    Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
-#      Post.find {where: {title: {nlike: 'M.+XY'}}}, (err, posts) ->
-#        should.not.exist(err)
-#        posts.should.have.property('length', 1)
-#
-#        done()
+  it 'should allow to find using like', (done) ->
+
+    Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
+      Post.find {where: {title: {like: 'M%st'}}}, (err, posts) ->
+        should.not.exist(err)
+        posts.should.have.property('length', 1)
+
+        done()
+
+  it 'should allow to find using case insensitive like', (done) ->
+
+    Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
+      Post.find {where: {title: {like: 'm%st', options: 'i'}}}, (err, posts) ->
+        should.not.exist(err)
+        posts.should.have.property('length', 1)
+
+        done()
+
+  it 'should allow to find using case insensitive like', (done) ->
+
+    Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
+      Post.find {where: {content: {like: 'HELLO', options: 'i'}}}, (err, posts) ->
+        should.not.exist(err)
+        posts.should.have.property('length', 1)
+
+        done()
+
+  it 'should support like for no match', (done) ->
+
+    Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
+      Post.find {where: {title: {like: 'M%XY'}}}, (err, posts) ->
+        should.not.exist(err)
+        posts.should.have.property('length', 0)
+
+        done()
+
+  it 'should allow to find using nlike', (done) ->
+
+    Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
+      Post.find {where: {title: {nlike: 'M%st'}}}, (err, posts) ->
+        should.not.exist(err)
+        posts.should.have.property('length', 0)
+
+        done()
+
+  it 'should allow to find using case insensitive nlike', (done) ->
+
+    Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
+      Post.find {where: {title: {nlike: 'm%st', options: 'i'}}}, (err, posts) ->
+        should.not.exist(err)
+        posts.should.have.property('length', 0)
+
+        done()
+
+  it 'should support nlike for no match', (done) ->
+
+    Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
+      Post.find {where: {title: {nlike: 'M%XY'}}}, (err, posts) ->
+        should.not.exist(err)
+        posts.should.have.property('length', 1)
+
+        done()
 #
   it 'should support "and" operator that is satisfied', (done) ->
 

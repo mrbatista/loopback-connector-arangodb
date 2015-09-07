@@ -511,6 +511,7 @@ class ArangoDBConnector extends Connector
         #  special case: if condValue is a Object (instead of a string or number) we have a conditionOperator
         if condValue and condValue.constructor.name is 'Object'
         #  condition operator is the only keys value, the new condition value is shifted one level deeper and can be a object with keys and values
+          options = condValue.options
           condOp = Object.keys(condValue)[0]
           condValue = condValue[condOp]
 
@@ -527,9 +528,11 @@ class ArangoDBConnector extends Connector
 
             # string comparison
             when condOp is 'like'
-              aqlArray.push qb.not qb.LIKE "#{self.returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
+              if options is 'i' then options = true else options = false
+              aqlArray.push qb.fn('LIKE') "#{self.returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}", options
             when condOp is 'nlike'
-              aqlArray.push qb.LIKE "#{self.returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
+              if options is 'i' then options = true else options = false
+              aqlArray.push qb.not qb.fn('LIKE') "#{self.returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}", options
 
             # array comparison
             when condOp is 'nin'
