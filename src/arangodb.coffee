@@ -3,7 +3,7 @@
 # Module dependencies
 url = require 'url'
 merge = require 'extend'
-async = require('async')
+async = require 'async'
 _ = require 'underscore'
 Connector = require('loopback-connector').Connector
 GeoPoint = require('loopback-datasource-juggler').GeoPoint
@@ -60,8 +60,8 @@ Decide if id should be included
 _idIncluded = (fields, idName) ->
   if !fields then return true
 
-  if Array.isArray(fields)
-    return fields.indexOf(idName) >= 0
+  if Array.isArray fields
+    return fields.indexOf idName  >= 0
 
   if fields[idName]
     # Included
@@ -278,7 +278,7 @@ class ArangoDBConnector extends Connector
     @db.query query, bindVars, (err, cursor) ->
       # workaround: when there is no error (e.g. wrong AQL syntax etc.) and no cursor, the authentication failed
       if not err? and cursor.length = 0
-        authErr = new Error 'Authentication failed'
+        authErr = Error 'Authentication failed'
         callback authErr
       else
         callback err, cursor
@@ -379,7 +379,7 @@ class ArangoDBConnector extends Connector
     self = this
     idValue = @getIdValue(model, data)
     idName = @idName(model)
-    idValue = new String(idValue) if typeof idValue is 'number'
+    idValue = String(idValue) if typeof idValue is 'number'
     delete data[idName]
     dataI = _.clone(data)
     dataI._key = idValue
@@ -492,7 +492,7 @@ class ArangoDBConnector extends Connector
         # correct if the conditionProperty falsely references to 'id'
         if condProp is idName
           condProp = '_key'
-          if typeof condValue is 'number' then condValue = new String(condValue)
+          if typeof condValue is 'number' then condValue = String(condValue)
 
         # special treatment for 'and', 'or' and 'nor' operator, since there value is an array of conditions
         if condProp in ['and', 'or', 'nor']
@@ -660,7 +660,9 @@ class ArangoDBConnector extends Connector
 
 
     @execute aql, bindVars, (err, result) ->
-      callback and callback err, result and result._result.length
+      res = result and result._result
+      res.count = res.length
+      callback and callback err, res
 
 
   ###
@@ -689,8 +691,9 @@ class ArangoDBConnector extends Connector
     aql = aql.remove(@returnVariable).in('@@collection').returnOld('removed')
 
     @execute aql, bindVars, (err, result) ->
-      return callback err if err
-      callback null, result._result.length
+      return callback err if callback and err
+      console.log result._result
+      callback and callback err, {count: result._result.length}
 
 
   ###
@@ -737,7 +740,7 @@ class ArangoDBConnector extends Connector
 
     self = this
 
-    if id is Number then id = new String(id)
+    if id is Number then id = String(id)
     idName = @idName(model)
 
     bindVars =
@@ -846,7 +849,7 @@ class ArangoDBConnector extends Connector
         else if Array.isArray indexes
           indexList = indexList.concat indexes
 
-        for propIdx, property of @_models[model].properties
+        for propIdx, property of self._models[model].properties
           if property.index
             index = {}
             index[propIdx] = 1
