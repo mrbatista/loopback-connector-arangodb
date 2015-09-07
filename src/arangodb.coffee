@@ -692,7 +692,6 @@ class ArangoDBConnector extends Connector
 
     @execute aql, bindVars, (err, result) ->
       return callback err if callback and err
-      console.log result._result
       callback and callback err, {count: result._result.length}
 
 
