@@ -186,46 +186,6 @@ describe 'arangodb core functionality:', () ->
       defaultIdType.should.be.a.class
       done()
 
-  describe 'conversion', () ->
-#    it "should convert Loopback Data Types to the respective ArangoDB Data Types", (done) ->
-#      firstName = chance.first()
-#      lastName = chance.last()
-#      birthdate = chance.birthday({american: false})
-#      money = chance.integer {min: 100, max: 1000}
-#      lat = chance.latitude()
-#      lng = chance.longitude()
-#
-#      toDB =
-#        name:
-#          first: firstName
-#          last: lastName
-#        profession: 'Node Developer'
-#        money: money
-#        birthday: birthdate
-#        icon: new Buffer('a20')
-#        active: true
-#        likes: ['nodejs', 'loopback']
-#        location: new GeoPoint {lat: lat, lng: lng}
-#
-#
-#      dbData = ds.connector.toDatabase 'ComplexModel', toDB
-#      expected =
-#        name:
-#          first: firstName
-#          last: lastName
-#        profession: 'Node Developer'
-#        money: money
-#        birthday: birthdate
-#        icon: new Buffer('a20').toString('base64')
-#        active: true
-#        likes: ['nodejs', 'loopback']
-#        location:
-#          lat: lat
-#          lng: lng
-#
-#      dbData.should.eql expected
-#      done()
-
 
     it "should convert ArangoDB Types to the respective Loopback Data Types", (done) ->
       firstName = chance.first()
