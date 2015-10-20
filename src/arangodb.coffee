@@ -261,7 +261,7 @@ class ArangoDBConnector extends Connector
 
     @notifyObserversAround 'execute', context, (context, done) ->
       self.executeAQL context.req.aql, context.req.params, (err, result) ->
-        context.res = result and result._result
+        context.res = result
         done err, result
     , callback
 
@@ -276,12 +276,8 @@ class ArangoDBConnector extends Connector
       debug "query: #{q} bindVars: #{JSON.stringify bindVars}"
 
     @db.query query, bindVars, (err, cursor) ->
-      # workaround: when there is no error (e.g. wrong AQL syntax etc.) and no cursor, the authentication failed
-      if not err? and cursor.length = 0
-        authErr = Error 'Authentication failed'
-        callback authErr
-      else
-        callback err, cursor
+      return callback err if err
+      callback err, cursor
 
 
   ###
@@ -624,7 +620,7 @@ class ArangoDBConnector extends Connector
     else
       aql = aql.return((qb.fn('UNSET') @returnVariable, ['"_id"','"_rev"']))
 
-    @execute aql, bindVars, (err, result) ->
+    @execute aql, bindVars, (err, cursor) ->
       return callback err if err
 
       cursorToArray = (r) ->
@@ -632,16 +628,15 @@ class ArangoDBConnector extends Connector
           self.setIdValue(model, r, r._key)
         # Don't pass back _key if the fields is set
         if idName isnt '_key' then delete r._key;
-
         r = self.fromDatabase(model, r)
 
-      result = (cursorToArray r for r in result._result)
-
-      # filter include
-      if filter.include?
-        self._models[model].model.include result, filter.include, options, callback
-      else
-        callback null, result
+      cursor.map cursorToArray, (err, result) ->
+        return callback err if err
+        # filter include
+        if filter.include?
+          self._models[model].model.include result, filter.include, options, callback
+        else
+          callback null, result
 
 
   ###
