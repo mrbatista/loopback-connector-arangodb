@@ -10,7 +10,7 @@ describe 'arangodb connector:', () ->
   PostWithStringId = null
   PostWithStringKey = null
   PostWithNumberUnderscoreId = null
-  Names = null
+  Name = null
 
   before () ->
     db = getDataSource()
@@ -88,9 +88,9 @@ describe 'arangodb connector:', () ->
       content: { type: String }
     });
 
-    Names = db.define('Names', {}, {
+    Name = db.define('Name', {}, {
       arangodb: {
-        collection: 'names'
+        collection: 'Names'
       }
     });
 
@@ -433,14 +433,14 @@ describe 'arangodb connector:', () ->
   # MEMO: Import data present into data/users/names_100000.json before running this test.
   it 'cursor should returns all documents more then max single default size (1000) ', (done) ->
 
-    Names.find (err, names) ->
+    Name.find (err, names) ->
       should.not.exist(err)
       names.length.should.be.equal(100000)
       done()
 
   it 'cursor should returns all documents more then max single default cursor size (1000) and respect limit filter ', (done) ->
 
-    Names.find {limit: 1002}, (err, names) ->
+    Name.find {limit: 1002}, (err, names) ->
       should.not.exist(err)
       names.length.should.be.equal(1002)
       done()
