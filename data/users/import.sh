@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 . ../json.sh
-. ../helpers.sh
 
 host="$(json_key 'test' 'arangodb' 'host' < ../../.loopbackrc)"
 port="$(json_key 'test' 'arangodb' 'port' < ../../.loopbackrc)"
@@ -8,8 +7,8 @@ database="$(json_key 'test' 'arangodb' 'database' < ../../.loopbackrc)"
 username="$(json_key 'test' 'arangodb' 'username' < ../../.loopbackrc)"
 password="$(json_key 'test' 'arangodb' 'password' < ../../.loopbackrc)"
 
-coll=${1:-users}
-dataFile=${2:-data.json}
+coll=${1:-Names}
+dataFile=${2:-names_100000.json}
 
 cmd_parameters=''
 # set url=host:port, connect via tcp
@@ -47,7 +46,7 @@ fi
 ${ARANGODB_BIN}arangosh $cmd_parameters --quiet <<EOF
   var db = require("org/arangodb").db;
   var Graph = require("org/arangodb/graph").Graph;
-  
+
   db._drop("$coll");
 EOF
 arangoimp --file=$dataFile $cmd_parameters --collection=$coll --create-collection=true --type=json
