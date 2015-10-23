@@ -10,6 +10,7 @@ describe 'arangodb connector:', () ->
   PostWithStringId = null
   PostWithStringKey = null
   PostWithNumberUnderscoreId = null
+  Name = null
 
   before () ->
     db = getDataSource()
@@ -85,6 +86,12 @@ describe 'arangodb connector:', () ->
       id: {type: Number, id: true},
       title: { type: String, length: 255, index: true },
       content: { type: String }
+    });
+
+    Name = db.define('Name', {}, {
+      arangodb: {
+        collection: 'Names'
+      }
     });
 
     User.hasMany(Post);
@@ -422,6 +429,26 @@ describe 'arangodb connector:', () ->
         updated.age.should.be.equal(32)
         updated.email.should.be.equal('al@strongloop')
         done()
+
+  # MEMO: Import data present into data/users/names_100000.json before running this test.
+  it 'cursor should returns all documents more then max single default size (1000) ', (done) ->
+
+    # Increase timeout only for this test
+    this.timeout(20000);
+    Name.find (err, names) ->
+      should.not.exist(err)
+      names.length.should.be.equal(100000)
+      done()
+
+  it 'cursor should returns all documents more then max single default cursor size (1000) and respect limit filter ', (done) ->
+
+    # Increase timeout only for this test
+    this.timeout(20000);
+    Name.find {limit: 1002}, (err, names) ->
+      should.not.exist(err)
+      names.length.should.be.equal(1002)
+      done()
+
 
   describe 'updateAll', () ->
 
