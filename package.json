@@ -15,12 +15,8 @@
     "prepublish": "coffee --bare --compile --output lib/ src/*.coffee",
     "test": "node_modules/.bin/mocha test/*.test.coffee -R spec -t 2000 --compilers coffee:coffee-script/register",
     "build-test": "npm run build && npm test",
-    "build-test-debug": "npm run build && DEBUG=loopback:* npm test",
-    "build-test-commit": "npm run build  && git add lib/* && npm test"
+    "build-test-debug": "npm run build && DEBUG=loopback:* npm test"
   },
-  "pre-commit": [
-    "build-commit-test"
-  ],
   "dependencies": {
     "aqb": "^1.8.3",
     "arangojs": "^3.3.1",
