@@ -12,7 +12,7 @@ describe 'arangodb connector:', () ->
   PostWithNumberUnderscoreId = null
   Name = null
 
-  before () ->
+  before (done) ->
     db = getDataSource()
 
     User = db.define('User', {
@@ -29,28 +29,10 @@ describe 'arangodb connector:', () ->
       }
     });
 
-    Superhero = db.define('Superhero', {
-      name: {type: String, index: true},
-      power: {type: String, index: true, unique: true},
-      address: {type: String, required: false, index: {mongodb: {unique: false, sparse: true}}},
-      description: {type: String, required: false},
-      geometry: {type: Object, required: false, index: {mongodb: {kind: "2dsphere"}}},
-      age: Number,
-      icon: Buffer
-    }, {
-      arangodb: {
-        collection: 'sh'
-      }
-    });
-
     Post = db.define('Post', {
       title: {type: String, length: 255, index: true},
       content: {type: String},
       comments: [String]
-    }, {
-      arangodb: {
-        collection: 'PostCollection' #Customize the collection name
-      }
     });
 
     Product = db.define('Product', {
@@ -58,10 +40,6 @@ describe 'arangodb connector:', () ->
       description: {type: String},
       price: {type: Number},
       pricehistory: {type: Object}
-    }, {
-      arangodb: {
-        collection: 'ProductCollection' #Customize the collection name
-      }
     });
 
     PostWithStringId = db.define('PostWithStringId', {
@@ -88,15 +66,13 @@ describe 'arangodb connector:', () ->
       content: { type: String }
     });
 
-    Name = db.define('Name', {}, {
-      arangodb: {
-        collection: 'Names'
-      }
-    });
+    Name = db.define('Name', {}, {});
 
     User.hasMany(Post);
     Post.belongsTo(User);
 
+    db.automigrate(['User', 'Post', 'Product', 'PostWithStringId', 'PostWithStringKey',
+                     'PostWithNumberUnderscoreId','PostWithNumberId'], done)
 
   beforeEach (done) ->
     User.settings.arangodb = {};
@@ -108,7 +84,6 @@ describe 'arangodb connector:', () ->
               PostWithStringKey.destroyAll(done)
 
   it 'should handle correctly type Number for id field _id', (done) ->
-
     PostWithNumberUnderscoreId.create {_id: 3, content: 'test'}, (err, person) ->
       should.not.exist(err)
       person._id.should.be.equal(3)
@@ -342,29 +317,29 @@ describe 'arangodb connector:', () ->
 
           done()
 
-  it 'should invoke hooks', (done) ->
-
-    events = []
-    connector = Post.getDataSource().connector
-    connector.observe 'before execute', (ctx, next) ->
-      ctx.req.aql.should.be.string;
-      ctx.req.params.should.be.Object;
-      events.push 'before execute'
-      next()
-
-    connector.observe 'after execute', (ctx, next) ->
-      ctx.res.should.be.Object
-      events.push 'after execute'
-      next()
-
-    Post.create {title: 'Post1', content: 'Post1 content'}, (err, p1) ->
-      Post.find (err, results) ->
-        events.should.eql(['before execute', 'after execute',
-          'before execute', 'after execute'])
-        connector.clearObservers 'before execute'
-        connector.clearObservers 'after execute'
-
-        done(err, results)
+#  it 'should invoke hooks', (done) ->
+#
+#    events = []
+#    connector = Post.getDataSource().connector
+#    connector.observe 'before execute', (ctx, next) ->
+#      ctx.req.aql.should.be.string;
+#      ctx.req.params.should.be.Object;
+#      events.push 'before execute'
+#      next()
+#
+#    connector.observe 'after execute', (ctx, next) ->
+#      ctx.res.should.be.Object
+#      events.push 'after execute'
+#      next()
+#
+#    Post.create {title: 'Post1', content: 'Post1 content'}, (err, p1) ->
+#      Post.find (err, results) ->
+#        events.should.eql(['before execute', 'after execute',
+#          'before execute', 'after execute'])
+#        connector.clearObservers 'before execute'
+#        connector.clearObservers 'after execute'
+#
+#        done(err, results)
 
 
   it 'should allow to find by number id using where', (done) ->

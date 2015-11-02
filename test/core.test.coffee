@@ -10,7 +10,6 @@ chance = require('chance').Chance()
 arangodb = require '..'
 ArangoDBConnector = arangodb.ArangoDBConnector
 
-
 describe 'arangodb core functionality:', () ->
   ds = null
   config = null
@@ -67,7 +66,6 @@ describe 'arangodb core functionality:', () ->
           databaseName: 'loopback_db'
           promise: false
 
-
         connObj = arangodb.generateConnObject settings
         connObj.should.eql expectedConnObj
         done()
@@ -86,7 +84,6 @@ describe 'arangodb core functionality:', () ->
           databaseName: 'rightDatabase'
           promise: false
 
-
         connObj = arangodb.generateConnObject settings
         connObj.should.eql expectedConnObj
         done()
@@ -101,15 +98,12 @@ describe 'arangodb core functionality:', () ->
           databaseName: 'rightDatabase'
           promise: true
 
-
         connObj = arangodb.generateConnObject settings
         connObj.should.eql expectedConnObj
         done()
 
       it 'should create an connection using the connection settings when url is not set', (done) ->
-
         settings = require('rc')('loopback').test.arangodb
-
         settings =
           host: 'right_host'
           port: 32768
@@ -122,7 +116,6 @@ describe 'arangodb core functionality:', () ->
           url: 'http://rightUser:rightPassword@right_host:32768'
           databaseName: 'rightDatabase'
           promise: true
-
 
         connObj = arangodb.generateConnObject settings
         connObj.should.eql expectedConnObj
@@ -162,17 +155,14 @@ describe 'arangodb core functionality:', () ->
     it 'should expose a function "version" which callsback with the version of the database', (done) ->
       ds.connector.getVersion (err, result) ->
         done err if err
-
         result.should.exist
         result.should.have.keys ['server', 'version']
         result.version.should.match /[0-9]+\.[0-9]+\.[0-9]+/
         done()
 
-
   describe 'connector details:', () ->
     it 'should provide a function "getTypes" which returns the array ["db", "nosql", "arangodb"]', (done) ->
       types = ds.connector.getTypes()
-
       types.should.not.be.null
       types.should.be.Array
       types.length.should.be.above(2)
@@ -181,7 +171,6 @@ describe 'arangodb core functionality:', () ->
 
     it 'should provide a function "getDefaultIdType" that returns String', (done) ->
       defaultIdType = ds.connector.getDefaultIdType()
-
       defaultIdType.should.not.be.null
       defaultIdType.should.be.a.class
       done()
@@ -194,7 +183,6 @@ describe 'arangodb core functionality:', () ->
       money = chance.integer {min: 100, max: 1000}
       lat = chance.latitude()
       lng = chance.longitude()
-
       fromDB =
         name:
           first: firstName
@@ -222,14 +210,12 @@ describe 'arangodb core functionality:', () ->
         likes: ['nodejs', 'loopback']
         location: new GeoPoint {lat: lat, lng: lng}
 
-
       jsonData.should.eql expected
       done()
 
   describe 'connector access', () ->
     it "should get the collection name from the name of the model", (done) ->
       simpleCollection = ds.connector.getCollectionName 'SimpleModel'
-
       simpleCollection.should.not.be.null
       simpleCollection.should.be.a.String
       simpleCollection.should.eql 'SimpleModel'
@@ -238,7 +224,6 @@ describe 'arangodb core functionality:', () ->
 
     it "should get the collection name from the 'name' property on the 'arangodb' property", (done) ->
       complexCollection = ds.connector.getCollectionName 'ComplexModel'
-
       complexCollection.should.not.be.null
       complexCollection.should.be.a.String
       complexCollection.should.eql 'Complex'
@@ -253,12 +238,11 @@ describe 'arangodb core functionality:', () ->
         " RETURN year"
       ].join("\n")
 
-      ds.connector.query aql_query_string, (err, cursor) ->
+      ds.connector.db.query aql_query_string, (err, cursor) ->
         done err if err
         cursor.should.exist
         cursor.all (err, values) ->
           done err if err
-
           values.should.not.be.null
           values.should.be.a.Array
           values.should.eql [2010, 2011, 2012, 2013]
@@ -272,12 +256,11 @@ describe 'arangodb core functionality:', () ->
         "  RETURN { year: year, following: following_year }"
       ].join("\n")
 
-      ds.connector.query aql_query_string, {difference: 1}, (err, cursor) ->
+      ds.connector.db.query aql_query_string, {difference: 1}, (err, cursor) ->
         done err if err
         cursor.should.exist
         cursor.all (err, values) ->
           done err if err
-
           values.should.not.be.null
           values.should.be.a.Array
           values.should.eql [{year: 2010, following: 2011}, {year: 2011, following: 2012},
@@ -287,12 +270,11 @@ describe 'arangodb core functionality:', () ->
     it "should execute a AQL query with no variables provided using the query builder object", (done) ->
       aql_query_object = ds.connector.qb.for('year').in('2010..2013').return('year')
 
-      ds.connector.query aql_query_object, (err, cursor) ->
+      ds.connector.db.query aql_query_object, (err, cursor) ->
         done err if err
         cursor.should.exist
         cursor.all (err, values) ->
           done err if err
-
           values.should.not.be.null
           values.should.be.a.Array
           values.should.eql [2010, 2011, 2012, 2013]
@@ -300,7 +282,6 @@ describe 'arangodb core functionality:', () ->
 
     it "should execute a AQL query with bound variables provided using the query builder object", (done) ->
       qb = ds.connector.qb
-
       aql = qb.for('year').in('2010..2013')
       aql = aql.let 'following', qb.add(qb.ref('year'), qb.ref('@difference'))
       aql = aql.return {
@@ -308,13 +289,11 @@ describe 'arangodb core functionality:', () ->
         following: qb.ref('following')
       }
 
-
-      ds.connector.query aql, {difference: 1}, (err, cursor) ->
+      ds.connector.db.query aql, {difference: 1}, (err, cursor) ->
         done err if err
         cursor.should.exist
         cursor.all (err, values) ->
           done err if err
-
           values.should.not.be.null
           values.should.be.a.Array
           values.should.eql [{year: 2010, following: 2011}, {year: 2011, following: 2012},
