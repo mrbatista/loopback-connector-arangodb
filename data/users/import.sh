@@ -7,8 +7,8 @@ database="$(json_key 'test' 'arangodb' 'database' < ../../.loopbackrc)"
 username="$(json_key 'test' 'arangodb' 'username' < ../../.loopbackrc)"
 password="$(json_key 'test' 'arangodb' 'password' < ../../.loopbackrc)"
 
-coll=${1:-Names}
-dataFile=${2:-names_100000.json}
+coll=${1:-Name}
+dataFile=${2:-names.json}
 
 cmd_parameters=''
 # set url=host:port, connect via tcp
