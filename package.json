@@ -43,5 +43,9 @@
     "url": "https://github.com/nvdnkpr/loopback-connector-arango.git"
   },
   "author": "Navid Nikpour <navid@nikpour.com>",
+  "contributors": [{
+    "name": "Matteo Padovano",
+    "email": "mrba7ista@gmail.com"
+  }],
   "license": "MIT"
 }
