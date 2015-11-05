@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 . ../json.sh
-. ../helpers.sh
 
 host="$(json_key 'test' 'arangodb' 'host' < ../../.loopbackrc)"
 port="$(json_key 'test' 'arangodb' 'port' < ../../.loopbackrc)"
@@ -47,7 +46,7 @@ fi
 ${ARANGODB_BIN}arangosh $cmd_parameters --quiet <<EOF
   var db = require("org/arangodb").db;
   var Graph = require("org/arangodb/graph").Graph;
-  
+
   db._drop("$coll");
 EOF
 arangoimp --file=$dataFile $cmd_parameters --collection=$coll --create-collection=true --type=csv
