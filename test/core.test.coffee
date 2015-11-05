@@ -1,13 +1,12 @@
 # This test written in mocha+should.js
 should = require('./init');
 
+arangojs = require 'arangojs'
+qb = require 'aqb'
+chance = require('chance').Chance()
+arangodb = require '..'
 DataSource = require('loopback-datasource-juggler').DataSource
 GeoPoint = require('loopback-datasource-juggler').GeoPoint
-QB = require 'aqb'
-ajs = require 'arangojs'
-chance = require('chance').Chance()
-
-arangodb = require '..'
 ArangoDBConnector = arangodb.ArangoDBConnector
 
 describe 'arangodb core functionality:', () ->
@@ -61,45 +60,9 @@ describe 'arangodb core functionality:', () ->
     describe 'connection generator:', () ->
       it 'should create the default connection object when called with an empty settings object', (done) ->
         settings = {}
-        expectedConnObj =
-          url: 'http://127.0.0.1:8529'
-          databaseName: 'loopback_db'
-          promise: false
 
         connObj = arangodb.generateConnObject settings
-        connObj.should.eql expectedConnObj
-        done()
-
-      it 'should create an connection using only the "url" property, ignoring other connection settings', (done) ->
-        settings =
-          url: 'http://rightUser:rightPassword@right_host:32768/rightDatabase'
-          hostname: 'http://localhost'
-          port: 1234
-          dataBase: 'NotExistent'
-          username: 'wrongUser'
-          password: 'wrongPassword'
-
-        expectedConnObj =
-          url: 'http://rightUser:rightPassword@right_host:32768'
-          databaseName: 'rightDatabase'
-          promise: false
-
-        connObj = arangodb.generateConnObject settings
-        connObj.should.eql expectedConnObj
-        done()
-
-      it 'should create an connection using only the "url" property, considers other non-connection settings', (done) ->
-        settings =
-          url: 'http://rightUser:rightPassword@right_host:32768/rightDatabase'
-          promise: true
-
-        expectedConnObj =
-          url: 'http://rightUser:rightPassword@right_host:32768'
-          databaseName: 'rightDatabase'
-          promise: true
-
-        connObj = arangodb.generateConnObject settings
-        connObj.should.eql expectedConnObj
+        connObj.should.eql 'http://127.0.0.1:8529'
         done()
 
       it 'should create an connection using the connection settings when url is not set', (done) ->
@@ -112,39 +75,33 @@ describe 'arangodb core functionality:', () ->
           password: 'rightPassword'
           promise: true
 
-        expectedConnObj =
-          url: 'http://rightUser:rightPassword@right_host:32768'
-          databaseName: 'rightDatabase'
-          promise: true
-
         connObj = arangodb.generateConnObject settings
-        connObj.should.eql expectedConnObj
+        connObj.should.eql 'http://rightUser:rightPassword@right_host:32768'
         done()
 
-
-  # describe 'authentication:', () ->
-  #   wrongAuth = null
-  #   it "should throw an error when using wrong credentials", (done) ->
-  #       config.password = 'wrong'
-  #       wrongAuth = getDataSource config
-  #       `(function(){
-  #           wrongAuth.connector.query('FOR year in 2010..2013 RETURN year', function (err, cursor){
-  #             if (err)
-  #               throw err;
-  #           });
-  #        }).should.throw();`
-  #       done()
-
+   describe 'authentication:', () ->
+     wrongAuth = null
+     it "should throw an error when using wrong credentials", (done) ->
+         config.password = 'wrong'
+         wrongAuth = getDataSource config
+         `(function(){
+             wrongAuth.connector.query('FOR year in 2010..2013 RETURN year', function (err, cursor){
+               if (err)
+                 throw err;
+             });
+          }).should.throw();`
+         done()
 
   describe 'exposed properties:', () ->
     it 'should expose a property "db" to access the driver directly', (done) ->
       ds.connector.db.should.be.not.null
-      ds.connector.db.should.be.ajs
+      ds.connector.db.should.be.Object
+      ds.connector.db.should.be.arangojs
       done()
 
     it 'should expose a property "qb" to access the query builder directly', (done) ->
       ds.connector.qb.should.not.be.null
-      ds.connector.qb.should.be.QB
+      ds.connector.qb.should.be.qb
       done()
 
     it 'should expose a property "api" to access the HTTP API directly', (done) ->
@@ -174,7 +131,6 @@ describe 'arangodb core functionality:', () ->
       defaultIdType.should.not.be.null
       defaultIdType.should.be.a.class
       done()
-
 
     it "should convert ArangoDB Types to the respective Loopback Data Types", (done) ->
       firstName = chance.first()
