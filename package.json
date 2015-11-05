@@ -18,7 +18,7 @@
     "build-test-debug": "npm run build && DEBUG=loopback:* npm test"
   },
   "dependencies": {
-    "aqb": "^1.8.3",
+    "aqb": "^2.1.0",
     "arangojs": "^4.0.0-alpha8",
     "async": "^1.0.0",
     "chance": "^0.7.6",

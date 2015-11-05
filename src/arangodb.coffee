@@ -374,10 +374,8 @@ class ArangoDBConnector extends Connector
     dataI = _.clone(data)
     dataI._key = idValue
 
-    # RETURN statement at the moment is not supported
-    # See https://github.com/arangodb/aqbjs/issues/15 when issue is solved
-    #aql = qb.upsert({_key: '@id'}).insert('@dataI').update('@data').in('@@collection').return({doc: NEW, isNewInstance: OLD ? false : true })
-    aql = 'UPSERT {_key: @id} INSERT @dataI UPDATE @data IN @@collection RETURN {doc: NEW, isNewInstance: OLD ? false : true }'
+    aql = qb.upsert({_key: '@id'}).insert('@dataI').update('@data').in('@@collection').let('isNewInstance',
+      qb.ref('OLD').then(false).else(true)).return({doc: 'NEW', isNewInstance: 'isNewInstance'});
     bindVars =
       '@collection': @getCollectionName model
       id: idValue
