@@ -1,6 +1,6 @@
 {
   "name": "loopback-connector-arangodb",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Loopback ArangoDB Connector",
   "main": "index.js",
   "keywords": [
@@ -40,7 +40,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/nvdnkpr/loopback-connector-arango.git"
+    "url": "https://github.com/nvdnkpr/loopback-connector-arangodb.git"
   },
   "author": "Navid Nikpour <navid@nikpour.com>",
   "contributors": [{
