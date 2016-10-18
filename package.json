@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "aqb": "^2.1.0",
-    "arangojs": "^4.0.0-alpha8",
+    "arangojs": "4.0.0-alpha8",
     "async": "^1.0.0",
     "chance": "^0.7.6",
     "debug": "^2.1.1",
