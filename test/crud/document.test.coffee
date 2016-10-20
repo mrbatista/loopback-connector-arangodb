@@ -406,7 +406,7 @@ describe 'crud document:', () ->
         done()
 
   # MEMO: Import data present into data/users/names_100000.json before running this test.
-  it 'cursor should returns all documents more then max single default size (1000) ', (done) ->
+  it.skip 'cursor should returns all documents more then max single default size (1000) ', (done) ->
 
   # Increase timeout only for this test
     this.timeout(20000);
@@ -415,7 +415,7 @@ describe 'crud document:', () ->
       names.length.should.be.equal(100000)
       done()
 
-  it 'cursor should returns all documents more then max single default cursor size (1000) and respect limit filter ', (done) ->
+  it.skip 'cursor should returns all documents more then max single default cursor size (1000) and respect limit filter ', (done) ->
 
   # Increase timeout only for this test
     this.timeout(20000);

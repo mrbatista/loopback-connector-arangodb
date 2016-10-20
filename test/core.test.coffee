@@ -5,22 +5,15 @@ arangojs = require 'arangojs'
 qb = require 'aqb'
 chance = require('chance').Chance()
 arangodb = require '..'
-DataSource = require('loopback-datasource-juggler').DataSource
 GeoPoint = require('loopback-datasource-juggler').GeoPoint
-ArangoDBConnector = arangodb.ArangoDBConnector
 
 describe 'arangodb core functionality:', () ->
   ds = null
-  config = null
   before () ->
     ds = getDataSource()
 
   describe 'connecting:', () ->
     before () ->
-      # get settings for db from .rc file
-      config = require('rc')('loopback', {}).test.arangodb
-      generateConnObject = arangodb.generateConnObject
-
       simple_model = ds.define 'SimpleModel', {
         name:
           type: String
@@ -66,7 +59,6 @@ describe 'arangodb core functionality:', () ->
         done()
 
       it 'should create an connection using the connection settings when url is not set', (done) ->
-        settings = require('rc')('loopback').test.arangodb
         settings =
           host: 'right_host'
           port: 32768
@@ -82,8 +74,9 @@ describe 'arangodb core functionality:', () ->
    describe 'authentication:', () ->
      wrongAuth = null
      it "should throw an error when using wrong credentials", (done) ->
-         config.password = 'wrong'
-         wrongAuth = getDataSource config
+         settings =
+           password: 'wrong'
+         wrongAuth = getDataSource settings
          `(function(){
              wrongAuth.connector.query('FOR year in 2010..2013 RETURN year', function (err, cursor){
                if (err)
