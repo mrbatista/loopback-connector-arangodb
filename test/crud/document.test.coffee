@@ -317,6 +317,26 @@ describe 'crud document:', () ->
 
           done()
 
+  it 'inq operator respect type of field', (done) ->
+    User.create [
+      {age: 3, name: 'user0'},
+      {age: 2, name: 'user1'},
+      {age: 4, name: 'user3'}],
+      (err, users) ->
+        should.not.exist(err)
+        users.should.be.instanceof(Array).and.have.lengthOf(3);
+        User.find {where: {or:
+          [
+            {age: {inq: [3]}},
+            {name: {inq: ['user3']}}
+          ]
+        }}, (err, founds) ->
+          should.not.exist(err)
+          should.exist(founds)
+          founds.should.be.instanceof(Array).and.have.lengthOf(2);
+          founds.should.containDeep({id: users[0], id: users[3]})
+          done()
+
     it 'should invoke hooks', (done) ->
 
       events = []
