@@ -97,7 +97,7 @@ class ArangoDBConnector extends Connector
     debug "ArangoDB connection is called with settings: #{JSON.stringify @settings}" if @debug
     if not @db
       @db = arangojs @settings
-      @api = @db.route '_api'
+      @api = @db.route '/_api'
     process.nextTick () ->
       callback and callback null, @db
 
