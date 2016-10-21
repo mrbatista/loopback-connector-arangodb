@@ -592,7 +592,7 @@ class ArangoDBConnector extends Connector
       if filter.where[toName]
         to = filter.where[toName];
         delete filter.where[toName];
-        filter.where._from = to;
+        filter.where._to = to;
 
       where = @_buildWhere(model, filter.where)
       for w in where.aqlArray
