@@ -6,8 +6,7 @@ GeoPoint = require('loopback-datasource-juggler').GeoPoint
 describe 'arangodb migration functionality', () ->
 
   before () ->
-    # TODO: create the test settings from reading in .loopbackrc
-    ds = getDataSource { url: 'http://connector:connector@192.168.99.100:32769/ConnectorTest' }
+    ds = getDataSource()
 
     inline_model = ds.define 'InlineModel',{
       hashIndex1:

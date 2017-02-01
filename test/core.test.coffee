@@ -7,12 +7,12 @@ chance = require('chance').Chance()
 arangodb = require '..'
 GeoPoint = require('loopback-datasource-juggler').GeoPoint
 
-describe 'arangodb core functionality:', () ->
+describe 'arangodb core functionality', () ->
   ds = null
   before () ->
     ds = getDataSource()
 
-  describe 'connecting:', () ->
+  describe 'connecting', () ->
     before () ->
       simple_model = ds.define 'SimpleModel', {
         name:
@@ -54,7 +54,7 @@ describe 'arangodb core functionality:', () ->
       it 'should create the default connection object when called with an empty settings object', (done) ->
         settings = {}
 
-        connObj = arangodb.generateConnObject settings
+        connObj = arangodb.generateArangoDBURL settings
         connObj.should.eql 'http://127.0.0.1:8529'
         done()
 
@@ -67,7 +67,7 @@ describe 'arangodb core functionality:', () ->
           password: 'rightPassword'
           promise: true
 
-        connObj = arangodb.generateConnObject settings
+        connObj = arangodb.generateArangoDBURL settings
         connObj.should.eql 'http://rightUser:rightPassword@right_host:32768'
         done()
 
@@ -102,11 +102,11 @@ describe 'arangodb core functionality:', () ->
       ds.connector.api.should.be.Object
       done()
 
-    it 'should expose a function "version" which callsback with the version of the database', (done) ->
+    it 'should expose a function "version" which callback with the version of the database', (done) ->
       ds.connector.getVersion (err, result) ->
-        done err if err
+        return done err if err
         result.should.exist
-        result.should.have.keys ['server', 'version']
+        result.should.have.keys 'server', 'version'
         result.version.should.match /[0-9]+\.[0-9]+\.[0-9]+/
         done()
 
@@ -168,7 +168,6 @@ describe 'arangodb core functionality:', () ->
       simpleCollection.should.not.be.null
       simpleCollection.should.be.a.String
       simpleCollection.should.eql 'SimpleModel'
-
       done()
 
     it "should get the collection name from the 'name' property on the 'arangodb' property", (done) ->
@@ -176,7 +175,6 @@ describe 'arangodb core functionality:', () ->
       complexCollection.should.not.be.null
       complexCollection.should.be.a.String
       complexCollection.should.eql 'Complex'
-
       done()
 
   describe 'querying', () ->
@@ -188,10 +186,10 @@ describe 'arangodb core functionality:', () ->
       ].join("\n")
 
       ds.connector.db.query aql_query_string, (err, cursor) ->
-        done err if err
+        return done err if err
         cursor.should.exist
         cursor.all (err, values) ->
-          done err if err
+          return done err if err
           values.should.not.be.null
           values.should.be.a.Array
           values.should.eql [2010, 2011, 2012, 2013]
@@ -206,10 +204,10 @@ describe 'arangodb core functionality:', () ->
       ].join("\n")
 
       ds.connector.db.query aql_query_string, {difference: 1}, (err, cursor) ->
-        done err if err
+        return done err if err
         cursor.should.exist
         cursor.all (err, values) ->
-          done err if err
+          return done err if err
           values.should.not.be.null
           values.should.be.a.Array
           values.should.eql [{year: 2010, following: 2011}, {year: 2011, following: 2012},
@@ -220,10 +218,10 @@ describe 'arangodb core functionality:', () ->
       aql_query_object = ds.connector.qb.for('year').in('2010..2013').return('year')
 
       ds.connector.db.query aql_query_object, (err, cursor) ->
-        done err if err
+        return done err if err
         cursor.should.exist
         cursor.all (err, values) ->
-          done err if err
+          return done err if err
           values.should.not.be.null
           values.should.be.a.Array
           values.should.eql [2010, 2011, 2012, 2013]
@@ -239,10 +237,10 @@ describe 'arangodb core functionality:', () ->
       }
 
       ds.connector.db.query aql, {difference: 1}, (err, cursor) ->
-        done err if err
+        return done err if err
         cursor.should.exist
         cursor.all (err, values) ->
-          done err if err
+          return done err if err
           values.should.not.be.null
           values.should.be.a.Array
           values.should.eql [{year: 2010, following: 2011}, {year: 2011, following: 2012},
