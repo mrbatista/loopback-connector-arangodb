@@ -4,7 +4,7 @@ should = require('./init');
 arangojs = require 'arangojs'
 qb = require 'aqb'
 chance = require('chance').Chance()
-arangodb = require '..'
+arangodb = require '../src/arangodb'
 GeoPoint = require('loopback-datasource-juggler').GeoPoint
 
 describe 'arangodb core functionality', () ->

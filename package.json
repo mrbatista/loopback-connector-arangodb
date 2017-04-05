@@ -11,8 +11,8 @@
     "Connector"
   ],
   "scripts": {
-    "prepublish": "coffee --bare --compile --output lib/ src/*.coffee",
-    "test": "node_modules/.bin/mocha test/*.test.coffee -R spec -t 2000 --compilers coffee:coffee-script/register"
+    "prepublish": "grunt build:dist",
+    "test": "grunt test"
   },
   "dependencies": {
     "aqb": "^2.1.0",
@@ -27,22 +27,35 @@
   "devDependencies": {
     "bluebird": "^2.9.14",
     "codo": "^2.0.11",
-    "coffee-script": "^1.9.1",
+    "coffee-script": "^1.12.4",
+    "coveralls": "^2.13.0",
+    "grunt": "^1.0.1",
+    "grunt-contrib-clean": "^1.0.0",
+    "grunt-contrib-coffee": "^1.0.0",
+    "grunt-contrib-concat": "^1.0.1",
+    "grunt-coveralls": "^1.0.1",
+    "grunt-mocha-istanbul": "^5.0.2",
+    "ibrik": "^2.0.0",
+    "istanbul": "^0.4.5",
+    "load-grunt-tasks": "^3.5.2",
     "loopback-datasource-juggler": "https://github.com/strongloop/loopback-datasource-juggler#2.x",
     "mocha": "^2.2.1",
     "rc": "^0.6.0",
     "semicov": "~0.1.1-1",
     "semver": "^4.3.1",
-    "should": "^8.4.0"
+    "should": "^8.4.0",
+    "time-grunt": "^1.4.0"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/mrbatita/loopback-connector-arangodb.git"
   },
   "author": "Navid Nikpour <navid@nikpour.com>",
-  "contributors": [{
-    "name": "Matteo Padovano",
-    "email": "mrba7ista@gmail.com"
-  }],
+  "contributors": [
+    {
+      "name": "Matteo Padovano",
+      "email": "mrba7ista@gmail.com"
+    }
+  ],
   "license": "MIT"
 }
