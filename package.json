@@ -11,11 +11,8 @@
     "Connector"
   ],
   "scripts": {
-    "build": "coffee --bare --compile --output lib/ src/*.coffee",
     "prepublish": "coffee --bare --compile --output lib/ src/*.coffee",
-    "test": "node_modules/.bin/mocha test/*.test.coffee -R spec -t 2000 --compilers coffee:coffee-script/register",
-    "build-test": "npm run build && npm test",
-    "build-test-debug": "npm run build && DEBUG=loopback:* npm test"
+    "test": "node_modules/.bin/mocha test/*.test.coffee -R spec -t 2000 --compilers coffee:coffee-script/register"
   },
   "dependencies": {
     "aqb": "^2.1.0",
@@ -31,12 +28,12 @@
     "bluebird": "^2.9.14",
     "codo": "^2.0.11",
     "coffee-script": "^1.9.1",
-    "loopback-datasource-juggler": "^2.28.0",
+    "loopback-datasource-juggler": "https://github.com/strongloop/loopback-datasource-juggler#2.x",
     "mocha": "^2.2.1",
     "rc": "^0.6.0",
     "semicov": "~0.1.1-1",
     "semver": "^4.3.1",
-    "should": "^5.2.0"
+    "should": "^8.4.0"
   },
   "repository": {
     "type": "git",
