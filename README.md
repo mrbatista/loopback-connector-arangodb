@@ -1,6 +1,14 @@
 # loopback-connector-arangodb
 
-[![NPM version][npm-image]][npm-url] [![NPM downloads][npm-downloads-image]][npm-downloads-url] [![Dependencies status][dep-status-image]][dep-status-url] [![Build Status][travis-image]][travis-url] [![MIT license][license-image]][license-url]
+[![tag][tag-image]][tag-url]
+[![build][travis-image]][travis-url]
+[![Coverage Status][coverage-image]][coverage-url]
+[![license:mit](https://img.shields.io/badge/license-mit-green.svg)](#license)
+<br>
+[![npm][npm-image]][npm-url]
+[![npm downloads][npm-downloads-image]][npm-downloads-url]
+[![dependencies][dep-status-image]][dep-status-url]
+[![devDependency][dev-dep-status-image]][dev-dep-status-url]
 
 The ArangoDB connector for the LoopBack framework.
 
@@ -72,13 +80,17 @@ to run them using our preconfigured test server.
 
 [MIT](LICENSE)
 
+[tag-image]: https://img.shields.io/github/tag/mrbatista/loopback-connector-arangodb.svg
+[tag-url]: https://github.com/mrbatista/loopback-connector-arangodb/releases
 [npm-image]: https://img.shields.io/npm/v/loopback-connector-arangodb.svg
 [npm-url]: https://npmjs.org/package/loopback-connector-arangodb
 [npm-downloads-image]: https://img.shields.io/npm/dm/loopback-connector-arangodb.svg
 [npm-downloads-url]: https://npmjs.org/package/loopback-connector-arangodb
 [dep-status-image]: https://img.shields.io/david/mrbatista/loopback-connector-arangodb.svg
 [dep-status-url]: https://david-dm.org/mrbatista/loopback-connector-arangodb
+[dev-dep-status-image]: https://david-dm.org/mrbatista/loopback-connector-arangodb/dev-status.svg
+[dev-dep-status-url]: https://david-dm.org/mrbatista/loopback-connector-arangodb#info=devDependencies
 [travis-image]: https://travis-ci.org/mrbatista/loopback-connector-arangodb.svg
 [travis-url]: https://travis-ci.org/mrbatista/loopback-connector-arangodb
-[license-image]: http://img.shields.io/badge/license-MIT-blue.svg
-[license-url]: LICENSE
+[coverage-image]: https://coveralls.io/repos/github/mrbatista/loopback-connector-arangodb/badge.svg
+[coverage-url]: https://coveralls.io/github/mrbatista/loopback-connector-arangodb
