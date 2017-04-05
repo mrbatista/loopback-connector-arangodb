@@ -14,6 +14,6 @@ if process.env.CI
     database: '_system'
 
 global.getDataSource = global.getSchema = (customConfig) ->
-  db = new DataSource(require('../'), customConfig || config);
+  db = new DataSource(require('../src/arangodb'), customConfig || config);
   db.log = (msg) -> console.log msg
   return db
