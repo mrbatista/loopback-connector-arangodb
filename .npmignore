@@ -1,5 +1,6 @@
 coverage
-lib
+data
 node_modules
 .loopbackrc
 .idea
+.travis.yml
