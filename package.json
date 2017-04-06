@@ -1,6 +1,6 @@
 {
   "name": "loopback-connector-arangodb",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Loopback ArangoDB Connector",
   "main": "index.js",
   "keywords": [
