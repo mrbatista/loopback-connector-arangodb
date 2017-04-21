@@ -595,13 +595,75 @@ class ArangoDBConnector extends Connector
                 geoExpr = qb.NEAR collection, lat, long
             #  if we don't have a matching operator or no operator at all (condOp = false) print warning
             else
-              console.warn 'No matching operator for : ', condOp
+              console.warn 'No matching operator for: ', condOp
         else
           aqlArray.push qb.eq "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
     return {
     aqlArray: aqlArray
     bindVars: bindVars
     geoExpr: geoExpr
+    }
+
+  ###
+  ###
+  _buildWhereUpsert: (model, where, index) ->
+    #  arangoDB support only literal object on upsert
+    literalObject = {}
+    bindVars = {}
+    # index for condition parameter binding
+    index = index or 0
+    #  helper function to fill bindVars with the upcoming temporary variables that the where sentence will generate
+    assignNewQueryVariable = (value) ->
+      partName = 'param_' + (index++)
+      bindVars[partName] = value
+      return '@' + partName
+
+    idName = @idName model
+    fullIdName = @_fullIdName model
+    fromName = @_fromName model
+    toName = @_toName model
+    ###
+      the where object comes in two flavors
+
+      - where[prop] = value: this is short for "prop" equals "value"
+      - where[prop][op] = value: this is the long version and stands for "prop" "op" "value"
+    ###
+    for condProp, condValue of where
+      do() =>
+        # support only 'and' operator
+        if condProp in ['and']
+          # 'and' has multiple conditions so we run buildWhere recursively on their array to
+          if Array.isArray condValue
+            # condValue is an array of conditions so get the conditions from it via a recursive buildWhere call
+            for c, a of condValue
+              cond = @_buildWhereUpsert model, a, ++index
+              literalObject = merge true, literalObject, cond.literalObject
+              bindVars = merge true, bindVars, cond.bindVars
+          return
+
+        # correct if the conditionProperty falsely references to 'id'
+        if condProp is idName
+          condProp = '_key'
+          if typeof condValue is 'number' then condValue = String(condValue)
+        if condProp is fullIdName
+          condProp = '_id'
+        if condProp is fromName
+          condProp = '_from'
+        if condProp is toName
+          condProp = '_to'
+
+        #  special case: if condValue is a Object (instead of a string or number) we have a conditionOperator
+        if condValue and condValue.constructor.name is 'Object'
+          #  condition operator is the only keys value, the new condition value is shifted one level deeper and can be a object with keys and values
+          condOp = Object.keys(condValue)[0]
+          condValue = condValue[condOp]
+        if condOp in ['lte', 'lt', 'gte', 'gt', 'eq', 'neq', 'between', 'like', 'nlike', 'nin', 'inq', 'near']
+          console.warn 'upsert support only `and` operator skip: ', condOp
+        else
+          literalObject[condProp] = "#{assignNewQueryVariable(condValue)}"
+    return {
+      literalObject: literalObject
+      bindVars: bindVars
     }
 
   ###
@@ -851,6 +913,71 @@ class ArangoDBConnector extends Connector
     Update all matching instances
   ###
   updateAll: @::update
+
+  ###
+    Upsert all instances that matching where criteria
+  ###
+  upsertWithWhere: (model, where, data, options, callback) ->
+    debug "upsertWithWhere for #{model} with where #{JSON.stringify where} and data #{JSON.stringify data}" if @debug
+
+    idValue = @getIdValue(model, data)
+    idName = @idName(model)
+    idValue = @getDefaultIdType() idValue if typeof idValue is 'number'
+    delete data[idName]
+
+    fullIdName = @_fullIdName model
+    if fullIdName then delete data[fullIdName]
+
+    isEdge = @_isEdge model
+    fromName = null
+    toName = null
+
+    if isEdge
+      fromName = @_fromName model
+      if fromName isnt '_from'
+        data._from = data[fromName]
+        delete data[fromName]
+      toName = @_toName model
+      if toName isnt '_to'
+        data._to = data[toName]
+        delete data[toName]
+
+    dataI = _.clone(data)
+    
+    if idValue
+      dataI._key = idValue
+        
+    bindVars =
+      '@collection': @getCollectionName model
+      data: data
+      dataI: dataI
+      
+    where = @_buildWhereUpsert(model, where)
+    bindVars = merge true, bindVars, where.bindVars
+    where = where.literalObject
+    
+    aql = qb.upsert(where).insert('@dataI').update('@data').in('@@collection').let('isNewInstance',
+      qb.ref('OLD').then(false).else(true)).return({doc: 'NEW', isNewInstance: 'isNewInstance'});
+
+    @execute model, 'query', aql, bindVars, (err, result) =>
+      if result and result._result[0]
+        newDoc = result._result[0].doc
+        # Delete revision
+        delete newDoc._rev
+        if fullIdName
+          data[fullIdName] = newDoc._id
+          if fullIdName isnt '_id' then delete newDoc._id
+        else
+          delete newDoc._id
+          if isEdge
+            if fromName isnt '_from' then data[fromName] = data._from
+            if toName isnt '_to' then data[toName] = data._to
+
+        isNewInstance = { isNewInstance: result._result[0].isNewInstance }
+        @setIdValue(model, data, newDoc._key)
+        @setIdValue(model, newDoc, newDoc._key)
+        if idName isnt '_key' then delete newDoc._key
+      callback err, newDoc, isNewInstance
 
   ###
     Perform autoupdate for the given models. It basically calls ensureIndex

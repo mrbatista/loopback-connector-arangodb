@@ -825,6 +825,79 @@ describe 'document', () ->
   #          should.not.exist(err)
   #          console.warn.calledOnce.should.be.ok;
   #          done()
+  
+  describe 'upsertWithWhere', () ->
+    it 'simple where - new instance', (done) ->
+      Post.upsertWithWhere {title: 'My Post'}, {title: 'New Post'}, (err, post) ->
+        return done(err) if err
+        post.should.exist
+        post.id.exist
+        post.title.should.equal('New Post')
+        done()
+        
+    it 'simple where - update instance', (done) ->
+      Post.create {title: 'My Post'}, (err, post) ->
+        return done(err) if err
+        post.should.exist
+        post.id.exist
+        post.title.should.equal('My Post')
+        Post.upsertWithWhere {title: 'My Post'}, {title: 'New Post'}, (err, p) ->
+          return done(err) if err
+          p.should.exist
+          p.id.exist
+          p.title.should.equal('New Post')
+          p.id.should.equal(post.id)
+          done()
+
+    it 'complex where - new instance', (done) ->
+      Post.upsertWithWhere {title: 'My Post', content: 'Hello'}, {title: 'New Post'}, (err, post) ->
+        return done(err) if err
+        post.should.exist
+        post.id.exist
+        post.title.should.equal('New Post')
+        should.not.exist(post.content)
+        done()
+
+    it 'complex where - update instance', (done) ->
+      Post.create {title: 'My Post Created', content: 'Hello'}, (err, post) ->
+        return done(err) if err
+        post.should.exist
+        post.id.exist
+        post.title.should.equal('My Post Created')
+        Post.upsertWithWhere {title: 'My Post Created', content: 'Hello'}, {title: 'New Post'}, (err, p) ->
+          return done(err) if err
+          p.should.exist
+          p.id.exist
+          p.title.should.equal('New Post')
+          p.content.should.equal('Hello')
+          p.id.should.equal(post.id)
+          done()
+  
+        
+    it 'complex where with `and` operator - new instance', (done) ->
+      Post.upsertWithWhere {and: [{title: 'My Post'}, {content: 'Hello'}]}, {title: 'New Post'}, (err, post) ->
+        return done(err) if err
+        post.should.exist
+        post.id.exist
+        post.title.should.equal('New Post')
+        should.not.exist(post.content)
+        done()
+
+    it 'complex where with `and` operator - update instance', (done) ->
+      Post.create {title: 'My Post Created', content: 'Hello'}, (err, post) ->
+        return done(err) if err
+        post.should.exist
+        post.id.exist
+        post.title.should.equal('My Post Created')
+        post.content.should.equal('Hello')
+        Post.upsertWithWhere {and: [{title: 'My Post Created'}, {content: 'Hello'}]}, {title: 'New Post'}, (err, p) ->
+          return done(err) if err
+          p.should.exist
+          p.id.exist
+          p.title.should.equal('New Post')
+          p.content.should.equal('Hello')
+          p.id.should.equal(post.id)
+          done()
 
   after (done) ->
     User.destroyAll ->
