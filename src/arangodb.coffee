@@ -375,12 +375,6 @@ class ArangoDBConnector extends Connector
   updateOrCreate: (model, data, options, callback) ->
     debug "updateOrCreate for Model #{model} with data: #{JSON.stringify data}" if @debug
 
-    @getVersion (err, v) ->
-      version = new RegExp(/[2-9]+\.[6-9]+\.[0-9]+/).test(v.version)
-      if err or !version
-        err = new Error "Error updateOrCreate not supported for version {#v}"
-        callback err
-
     idValue = @getIdValue(model, data)
     idName = @idName(model)
     idValue = @getDefaultIdType() idValue if typeof idValue is 'number'

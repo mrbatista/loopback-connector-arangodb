@@ -39,7 +39,7 @@ module.exports = (grunt) ->
         files:
           'lib/arangodb.js': 'src/arangodb.coffee'
 
-    'mocha_istanbul':
+    mocha_istanbul:
       coverage:
         src: 'test'
         options:
@@ -47,6 +47,7 @@ module.exports = (grunt) ->
           print: 'detail'
           reporter: 'dot'
           scriptPath: require.resolve('./node_modules/ibrik/bin/ibrik')
+          noFail: false
 
     istanbul_check_coverage:
       default:

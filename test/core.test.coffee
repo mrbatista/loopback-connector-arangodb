@@ -106,7 +106,7 @@ describe 'arangodb core functionality', () ->
       ds.connector.getVersion (err, result) ->
         return done err if err
         result.should.exist
-        result.should.have.keys 'server', 'version'
+        result.should.have.properties 'server', 'version'
         result.version.should.match /[0-9]+\.[0-9]+\.[0-9]+/
         done()
 
