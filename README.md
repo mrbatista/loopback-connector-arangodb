@@ -12,6 +12,25 @@
 
 The ArangoDB connector for the LoopBack framework.
 
+## Note
+
+1. Version 2.x.x **drop** support for node v0.12. The supported version
+   are node v4.x.x and v6.x.x
+2. If you want to migrate to 2.x.x and use ArangoDB 2.8.x is it necessary
+   to configure the connector to use the old version. Example:
+```json
+    "test": {
+        "arangodb": {
+            "host": "127.0.0.1",
+            "database": "test",
+            "username": "youruser",
+            "password": "yourpass",
+            "port": 8529,
+            "arangoVersion": 28000
+        }
+    }
+```
+
 ## Customizing ArangoDB configuration for tests/examples
 
 By default, examples and tests from this module assume there is a ArangoDB server
@@ -25,7 +44,7 @@ which is not suppored in general.
 For information on configuring the connector in a LoopBack application, please refer to [LoopBack documentation](http://docs.strongloop.com/display/LB/MongoDB+connector).
 
 The .loopbackrc file is in JSON format, for example:
-
+```json
     {
         "dev": {
             "arangodb": {
@@ -46,7 +65,8 @@ The .loopbackrc file is in JSON format, for example:
             }
         }
     }
-
+```
+    
 **Note**: username/password is only required if the ArangoDB server has
 authentication enabled.
 
