@@ -55,7 +55,7 @@ describe 'edge', () ->
         should.exist(err)
         err.name.should.equal('ArangoError')
         err.code.should.equal(400)
-        err.message.should.match(/^\'to\' is missing, expecting/)
+        err.message.should.match(/^\'to\' is missing, expecting|invalid edge attribute/)
         done()
 
   it 'should report error create edge without field `_from`', (done) ->
@@ -66,7 +66,7 @@ describe 'edge', () ->
         should.exist(err)
         err.name.should.equal('ArangoError')
         err.code.should.equal(400)
-        err.message.should.match(/^\'from\' is missing, expecting/)
+        err.message.should.match(/^\'from\' is missing, expecting|invalid edge attribute/)
         done()
 
   it 'create edge should return default fields _to and _from', (done) ->
