@@ -1,3 +1,13 @@
+2017-06-01, Version 2.0.0
+=========================
+
+ * update readme for new release (Matteo Padovano)
+
+ * add arangodb v3 to travis (Matteo Padovano)
+
+ * add .npmignore file (Matteo Padovano)
+
+
 2017-04-06, Version 1.1.0
 =========================
 
