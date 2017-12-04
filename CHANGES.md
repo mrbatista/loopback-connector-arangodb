@@ -1,3 +1,15 @@
+2017-12-04, Version 2.0.1
+=========================
+
+ * remove default promise settings (Matteo Padovano)
+
+ * fix wrong repository url (Matteo Padovano)
+
+ * update travis file (Matteo Padovano)
+
+ * update gitignore (Matteo Padovano)
+
+
 2017-06-01, Version 2.0.0
 =========================
 
