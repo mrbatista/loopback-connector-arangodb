@@ -33,7 +33,8 @@ describe 'document', () ->
       title: {type: String, length: 255, index: true},
       content: {type: String},
       comments: [String]
-    });
+    },
+      {forceId: false});
 
     Product = db.define('Product', {
       name: {type: String, length: 255, index: true},
@@ -628,7 +629,7 @@ describe 'document', () ->
         should.not.exist(err)
         posts.should.have.property('length', 1)
         done()
-  
+
   it 'should support "and" operator that is satisfied', (done) ->
     Post.create {title: 'My Post', content: 'Hello'}, (err, post) ->
       Post.find {where: {and: [{title: 'My Post'}, {content: 'Hello'}]}}, (err, posts) ->
@@ -714,7 +715,7 @@ describe 'document', () ->
             should.not.exist(err)
             count.should.be.equal(1)
             done()
-  
+
   #  context 'regexp operator', () ->
   #    before () ->
   #      deleteExistingTestFixtures (done) ->

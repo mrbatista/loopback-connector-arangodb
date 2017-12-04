@@ -28,10 +28,10 @@
   "devDependencies": {
     "bluebird": "^3.5.0",
     "codo": "^2.0.11",
-    "coffee-script": "^1.12.4",
-    "coveralls": "^2.13.0",
+    "coffeescript": "^2.3.1",
+    "coveralls": "^3.0.1",
     "loopback-datasource-juggler": "https://github.com/strongloop/loopback-datasource-juggler#2.x",
-    "mocha": "^3.2.0",
+    "mocha": "^3.5.3",
     "moment": "^2.22.1",
     "nyc": "^11.8.0",
     "rc": "^1.2.1",
