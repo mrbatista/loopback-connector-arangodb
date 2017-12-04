@@ -21,7 +21,6 @@ exports.generateArangoDBURL = generateArangoDBURL = (settings) ->
   u.port = settings.port or 8529
   u.auth = "#{settings.username}:#{settings.password}" if settings.username and settings.password
   settings.databaseName = settings.database or settings.db or '_system'
-  settings.promise = settings.promise or false
   return  url.format u
 
 ###
@@ -58,8 +57,8 @@ _fieldIncluded = (fields, fieldName) ->
 ###
 _isReservedKey = (key) ->
   key in ['_key', '_id', '_rev', '_from', '_to']
-    
-    
+
+
 ###
   Initialize the ArangoDB connector for the given data source
   @param {DataSource} dataSource The data source instance
@@ -82,7 +81,7 @@ class ArangoDBConnector extends Connector
   @collection = 'collection'
   @edgeCollection = 'edgeCollection'
   @returnVariable = 'result'
-  
+
   ###
     The constructor for ArangoDB connector
     @param {Object} settings The settings object
@@ -102,7 +101,7 @@ class ArangoDBConnector extends Connector
   ###
     Connect to ArangoDB
     @param {Function} [callback] The callback function
- 
+
     @callback callback
     @param {Error} err The error object
     @param {Db} db The arangoDB object
@@ -164,7 +163,7 @@ class ArangoDBConnector extends Connector
         # Reset to id
         if idProp.type is Number and isNaN id then idValue = id
     return idValue;
-    
+
   ###
     Set value of specific field into data object
     @param data {Object} The data object
@@ -354,7 +353,7 @@ class ArangoDBConnector extends Connector
       idValue = @coerceId model, result._key
       delete data._key
       data[idName] = idValue;
-      
+
       if isEdge
         if fromName isnt '_from' then data[fromName] = data._from
         if toName isnt '_to' then data[toName] = data._to
@@ -362,7 +361,7 @@ class ArangoDBConnector extends Connector
       if fullIdName
         data[fullIdName] = result._id
         delete result._id
-        
+
       callback err, idValue
 
   ###
