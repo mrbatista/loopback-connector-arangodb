@@ -111,7 +111,7 @@ class ArangoDBConnector extends Connector
     if not @db
       @db = arangojs @settings
       @api = @db.route '/_api'
-    process.nextTick () ->
+    process.nextTick () =>
       callback null, @db if callback
 
   ###
@@ -301,7 +301,7 @@ class ArangoDBConnector extends Connector
     if @version?
       callback null, @version
     else
-      @api.get 'version', (err, result) ->
+      @api.get 'version', (err, result) =>
         callback err if err
         @version = result.body
         callback null, @version
