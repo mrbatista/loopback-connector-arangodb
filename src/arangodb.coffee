@@ -758,7 +758,8 @@ class ArangoDBConnector extends Connector
         aql = aql.filter(w)
       merge true, bindVars, where.bindVars
 
-    aql = qb.let('count', aql.return(returnVariable)).return(qb.LENGTH('count'))
+    aql = aql.collectWithCountInto(returnVariable).return(returnVariable)
+
     @execute model, 'query', aql, bindVars, (err, result) ->
       callback err, result._result[0]
 
