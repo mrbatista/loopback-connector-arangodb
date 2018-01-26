@@ -1,3 +1,9 @@
+2018-01-26, Version 2.0.3
+=========================
+
+ * Improve the performance for count method (Matteo Padovano)
+
+
 2017-12-12, Version 2.0.2
 =========================
 
