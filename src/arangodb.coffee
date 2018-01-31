@@ -58,6 +58,13 @@ _fieldIncluded = (fields, fieldName) ->
 _isReservedKey = (key) ->
   key in ['_key', '_id', '_rev', '_from', '_to']
 
+class Sequence
+  constructor: (start) ->
+    @nextVal = start or 0
+
+  next: () ->
+    return @nextVal++;
+
 
 ###
   Initialize the ArangoDB connector for the given data source
@@ -471,13 +478,13 @@ class ArangoDBConnector extends Connector
     Extracts where relevant information from the filter for a certain model
     @param [String] model The model name
     @param [Object] filter The filter object, also containing the where conditions
-    @param [String] returnVariable The variable to build the where conditions on
+    @param [Sequence] sequence The sequence instance used to generate random bind vars
     @return return [Object]
     @option return aqlArray [Array] The issued conditions as an array of AQL query builder objects
     @option return bindVars [Object] The variables, bound in the conditions
     @option return geoObject [Object] An query builder object containing possible parameters for a geo query
   ###
-  _buildWhere: (model, where, index) ->
+  _buildWhere: (model, where, sequence) ->
     debug "Evaluating where object #{JSON.stringify where} for Model #{model}" if @debug
 
     if !where? or typeof where isnt 'object'
@@ -489,10 +496,10 @@ class ArangoDBConnector extends Connector
     bindVars = {}
     geoExpr = {}
     # index for condition parameter binding
-    index = index or 0
+    sequence = sequence or new Sequence
     #  helper function to fill bindVars with the upcoming temporary variables that the where sentence will generate
     assignNewQueryVariable = (value) ->
-      partName = 'param_' + (index++)
+      partName = 'param_' + sequence.next()
       bindVars[partName] = value
       return '@' + partName
 
@@ -515,7 +522,7 @@ class ArangoDBConnector extends Connector
             aql = qb
             # condValue is an array of conditions so get the conditions from it via a recursive buildWhere call
             for c, a of condValue
-              cond = @_buildWhere model, a, ++index
+              cond = @_buildWhere model, a, sequence
               aql = aql[condProp] cond.aqlArray[0]
               bindVars = merge true, bindVars, cond.bindVars
             aqlArray.push aql

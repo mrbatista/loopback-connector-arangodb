@@ -4,3 +4,4 @@ node_modules
 .loopbackrc
 .idea
 .travis.yml
+test
