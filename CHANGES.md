@@ -1,3 +1,13 @@
+2018-02-01, Version 2.0.4
+=========================
+
+ * fix wrong aql generator for lte and lt condition (Matteo Padovano)
+
+ * check for error callback (Matteo Padovano)
+
+ * fix wrong index generator with complex query (Matteo Padovano)
+
+
 2018-01-26, Version 2.0.3
 =========================
 
