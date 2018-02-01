@@ -550,10 +550,11 @@ class ArangoDBConnector extends Connector
           # If the value is not an array, fall back to regular fields
           switch
             when condOp in ['lte', 'lt']
-              aqlArray.push qb[condOp] "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
+              tempAql = qb[condOp] "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
               # https://docs.arangodb.com/2.8/Aql/Basics.html#type-and-value-order
               if condValue isnt null
-                aqlArray.push qb['neq'] "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(null)}"
+                tempAql = tempAql.and qb['neq'] "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(null)}"
+              aqlArray.push(tempAql)
             when condOp in ['gte', 'gt']
               # https://docs.arangodb.com/2.8/Aql/Basics.html#type-and-value-order
               if condValue is null
