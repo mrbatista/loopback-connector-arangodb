@@ -743,7 +743,9 @@ class ArangoDBConnector extends Connector
     aql = aql.remove(returnVariable).in('@@collection')
 
     @execute model, 'query', aql, bindVars, (err, result) ->
-      callback and callback err, {count: result.extra.stats.writesExecuted}
+      if callback
+        return callback err if err
+        callback null, {count: result.extra.stats.writesExecuted}
 
   ###
     Count the number of instances for the given model
@@ -768,7 +770,8 @@ class ArangoDBConnector extends Connector
     aql = aql.collectWithCountInto(returnVariable).return(returnVariable)
 
     @execute model, 'query', aql, bindVars, (err, result) ->
-      callback err, result._result[0]
+      return callback err if err
+      callback null, result._result[0]
 
   ###
     Update properties for the model instance data
