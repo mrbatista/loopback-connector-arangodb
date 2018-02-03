@@ -8,7 +8,6 @@ merge = require 'extend'
 async = require 'async'
 _ = require 'underscore'
 Connector = require('loopback-connector').Connector
-GeoPoint = require('loopback-datasource-juggler').GeoPoint
 debug = require('debug') 'loopback:connector:arango'
 
 ###
@@ -252,8 +251,8 @@ class ArangoDBConnector extends Connector
       if data[key]? and val? and val.type is Date
         data[key] = new Date data[key]
       # GeoPoint
-      if data[key]? and val? and val.type is GeoPoint
-        data[key] = new GeoPoint { lat: data[key].lat, lng: data[key].lng }
+      if data[key]? and val? and val.type  and val.type.name is 'GeoPoint'
+        console.warn('GeoPoint is not supported by connector');
     return data
 
   ###
