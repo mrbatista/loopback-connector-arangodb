@@ -567,7 +567,9 @@ class ArangoDBConnector extends Connector
               aqlArray.push qb[condOp] "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue)}"
             # range comparison
             when condOp is 'between'
-              aqlArray.push [qb.gte("#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue[0])}"),  qb.lte("#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue[1])}")]
+              tempAql = qb.gte "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue[0])}"
+              tempAql = tempAql.and qb.lte "#{returnVariable}.#{condProp}", "#{assignNewQueryVariable(condValue[1])}"
+              aqlArray.push(tempAql)
             # string comparison
             when condOp is 'like'
               if options is 'i' then options = true else options = false

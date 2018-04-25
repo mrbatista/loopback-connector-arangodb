@@ -40,6 +40,7 @@
     "load-grunt-tasks": "^3.5.2",
     "loopback-datasource-juggler": "https://github.com/strongloop/loopback-datasource-juggler#2.x",
     "mocha": "^3.2.0",
+    "moment": "^2.22.1",
     "rc": "^1.2.1",
     "semicov": "^0.2.0",
     "semver": "^5.3.0",
