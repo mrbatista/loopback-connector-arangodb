@@ -1,3 +1,9 @@
+2018-04-25, Version 2.0.5
+=========================
+
+ * fix between operator (Matteo Padovano)
+
+
 2018-02-01, Version 2.0.4
 =========================
 
