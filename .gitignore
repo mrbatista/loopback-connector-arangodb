@@ -5,6 +5,7 @@
 /dist
 /tmp
 /out-tsc
+/.nyc_output
 
 # dependencies
 /node_modules
@@ -36,6 +37,7 @@ testem.log
 /typings
 .strong-pm
 .loopbackrc
+/.history
 
 # e2e
 /e2e/*.js
