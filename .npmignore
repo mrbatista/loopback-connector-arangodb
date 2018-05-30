@@ -1,7 +1,10 @@
 coverage
 data
 node_modules
+test
+
 .loopbackrc
 .idea
 .travis.yml
-test
+.history
+.nyc_output

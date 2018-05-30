@@ -15,7 +15,7 @@ before_install:
   - ./test/travis/setup_arangodb.sh
 
 after_success:
-  - grunt coveralls
+  - npm run coverage:ci
 
 after_script:
   - ./test/travis/teardown_arangodb.sh
