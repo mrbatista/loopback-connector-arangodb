@@ -30,7 +30,7 @@
     "codo": "^2.0.11",
     "coffeescript": "^2.3.1",
     "coveralls": "^3.0.1",
-    "loopback-datasource-juggler": "https://github.com/strongloop/loopback-datasource-juggler#2.x",
+    "loopback-datasource-juggler": "^3.21.1",
     "mocha": "^3.5.3",
     "moment": "^2.22.1",
     "nyc": "^11.8.0",

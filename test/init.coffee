@@ -36,3 +36,4 @@ global.connectorCapabilities =
   nestedProperty: true
   replaceOrCreateReportsNewInstance: true
   supportInclude: true
+  supportInq: true
