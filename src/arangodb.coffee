@@ -274,6 +274,9 @@ class ArangoDBConnector extends Connector
       args[args.length - 1] = (err, result) ->
         if err
           debug('Error: ', err);
+          if err.code
+            err.statusCode = err.code
+          err.response? delete err.response
         else
           context.res = result;
           debug('Result: ', result)

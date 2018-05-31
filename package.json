@@ -17,21 +17,21 @@
   },
   "dependencies": {
     "aqb": "^2.1.0",
-    "arangojs": "^5.0.0",
+    "arangojs": "^5.7.0",
     "async": "^2.3.0",
-    "chance": "^0.7.6",
-    "debug": "^2.1.1",
+    "chance": "^1.0.12",
+    "debug": "^3.1.0",
     "extend": "^3.0.0",
-    "loopback-connector": "^2.2.0",
+    "loopback-connector": "^4.4.0",
     "underscore": "^1.8.2"
   },
   "devDependencies": {
     "bluebird": "^3.5.0",
     "codo": "^2.0.11",
-    "coffee-script": "^1.12.4",
-    "coveralls": "^2.13.0",
+    "coffeescript": "^2.3.1",
+    "coveralls": "^3.0.1",
     "loopback-datasource-juggler": "https://github.com/strongloop/loopback-datasource-juggler#2.x",
-    "mocha": "^3.2.0",
+    "mocha": "^3.5.3",
     "moment": "^2.22.1",
     "nyc": "^11.8.0",
     "rc": "^1.2.1",
@@ -55,12 +55,12 @@
       ".coffee"
     ],
     "exclude": [
-      "server/server.js", 
-      "coverage/**", 
+      "server/server.js",
+      "coverage/**",
       "test/**"
     ],
     "reporter": [
-      "lcov", 
+      "lcov",
       "text-summary"
     ],
     "check-coverage": true,

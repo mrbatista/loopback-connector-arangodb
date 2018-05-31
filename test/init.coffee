@@ -32,8 +32,9 @@ global.getDataSource = global.getSchema = (customConfig) ->
   db.log = (msg) -> console.log msg
   return db
 
-global.connectorCapabilities = {
-  ilike: false,
-  nilike: false,
-  nestedProperty: true,
-};
+global.connectorCapabilities =
+  ilike: false
+  nilike: false
+  nestedProperty: true
+  replaceOrCreateReportsNewInstance: true
+  supportInclude: true
