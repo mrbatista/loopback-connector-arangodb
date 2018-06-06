@@ -12,10 +12,7 @@ calculateArangoDBVersion = (version) ->
   major = Number version[0];
   minor = Number version[1];
 
-  if major is 3
-    return 30000
-  else
-    return major * 10000 + minor * 1000
+  return major * 10000 + minor * 1000
 
 if process.env.CI
   ARANGODB_VERSION = calculateArangoDBVersion process.env.ARANGODB_VERSION
