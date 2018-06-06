@@ -1,3 +1,13 @@
+2018-06-06, Version 2.1.0
+=========================
+
+ * update dependencies (Matteo Padovano)
+
+ * remove grunt and migrate to npm scripts (Matteo Padovano)
+
+ * remove dependency of loopback-datasource-juggler (Matteo Padovano)
+
+
 2018-04-25, Version 2.0.5
 =========================
 
