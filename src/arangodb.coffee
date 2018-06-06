@@ -953,8 +953,10 @@ class ArangoDBConnector extends Connector
           if err
             if err.response.body?
               err = err.response.body
-              #  For errors other than 'ns not found' (collection doesn't exist)
-              return modelCallback err if not (err.error is true and err.errorNum is 1203 and err.errorMessage is 'unknown collection \'' + model + '\'')
+              #  For errors other than 'collection not found'
+              isCollectionNotFound = err.error is true and err.errorNum is 1203 and
+                (err.errorMessage is 'unknown collection \'' + model + '\'' or err.errorMessage is 'collection not found')
+              return modelCallback err if not isCollectionNotFound
           # Recreate the collection
           debug 'create collection %s for model %s', collectionName, model
           collection.create modelCallback

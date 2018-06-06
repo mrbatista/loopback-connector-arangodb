@@ -46,7 +46,7 @@ describe 'edge', () ->
   after (done) ->
     User.destroyAll ->
       Friend.destroyAll done
-    
+
   it 'should report error create edge without field `_to`', (done) ->
     User.create [{name: 'Matteo'}, {name: 'Antonio'}], (err, users) ->
       return done err if err
@@ -55,7 +55,7 @@ describe 'edge', () ->
         should.exist(err)
         err.name.should.equal('ArangoError')
         err.code.should.equal(400)
-        err.message.should.match(/^\'to\' is missing, expecting|invalid edge attribute/)
+        err.message.should.match(/^\'to\' is missing, expecting|invalid edge attribute|edge attribute missing or invalid/)
         done()
 
   it 'should report error create edge without field `_from`', (done) ->
@@ -66,7 +66,7 @@ describe 'edge', () ->
         should.exist(err)
         err.name.should.equal('ArangoError')
         err.code.should.equal(400)
-        err.message.should.match(/^\'from\' is missing, expecting|invalid edge attribute/)
+        err.message.should.match(/^\'from\' is missing, expecting|invalid edge attribute|edge attribute missing or invalid/)
         done()
 
   it 'create edge should return default fields _to and _from', (done) ->
