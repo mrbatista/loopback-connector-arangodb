@@ -12,14 +12,11 @@ env:
   - ARANGODB_VERSION=3.3
 
 before_install:
-  - chmod +x ./test/travis/setup_arangodb.sh
-  - ./test/travis/setup_arangodb.sh
+- docker pull arangodb:$ARANGODB_VERSION
+- docker run -e ARANGO_NO_AUTH=1 -p 8529:8529 -d arangodb:$ARANGODB_VERSION
 
 after_success:
   - npm run coverage:ci
-
-after_script:
-  - ./test/travis/teardown_arangodb.sh
 
 branches:
   only:
