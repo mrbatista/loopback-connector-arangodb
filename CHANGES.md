@@ -1,3 +1,19 @@
+2018-06-08, Version 2.1.1
+=========================
+
+ * fix wrong calculation arangodb version (Matteo Padovano)
+
+ * migrate to docker for travis CI (Matteo Padovano)
+
+ * add support to arangodb 3.3 (Matteo Padovano)
+
+ * update dependencies (Matteo Padovano)
+
+ * remove grunt and migrate to npm scripts (Matteo Padovano)
+
+ * remove dependency of loopback-datasource-juggler (Matteo Padovano)
+
+
 2018-04-25, Version 2.0.5
 =========================
 
